@@ -1,19 +1,45 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { BkfUser } from "@/data/bkf/mock-users";
-import { usersForApp } from "@/data/bkf/mock-users";
+import {
+  setUserDisabledByAdmin,
+  watchAppUsers,
+} from "@/lib/bkf/users-firestore";
 
 type Props = { appId: string };
 
 type Filter = "all" | "active" | "disabled" | "premium";
 
 export function UsersModule({ appId }: Props) {
-  const seed = usersForApp(appId);
-  const [rows, setRows] = useState<BkfUser[]>(seed);
+  const [rows, setRows] = useState<BkfUser[]>([]);
+  const [ready, setReady] = useState(false);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [note, setNote] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (appId !== "angels_care") {
+      setRows([]);
+      setReady(true);
+      return;
+    }
+    setReady(false);
+    const unsub = watchAppUsers(
+      (list) => {
+        setRows(list);
+        setReady(true);
+        setError(null);
+      },
+      (err) => {
+        setReady(true);
+        setError(err.message || "Falha ao carregar usuários.");
+      },
+    );
+    return () => unsub();
+  }, [appId]);
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -30,25 +56,44 @@ export function UsersModule({ appId }: Props) {
     });
   }, [rows, q, filter]);
 
-  function toggleDisabled(id: string) {
-    setRows((prev) =>
-      prev.map((u) => {
-        if (u.id !== id) return u;
-        const next = !u.accountDisabled;
-        setNote(
-          next
-            ? `${u.displayName} desativado (demo local).`
-            : `${u.displayName} reativado (demo local).`,
-        );
-        return { ...u, accountDisabled: next };
-      }),
+  async function toggleDisabled(user: BkfUser) {
+    if (busyId) return;
+    const next = !user.accountDisabled;
+    const ok = window.confirm(
+      next
+        ? `Desativar ${user.displayName}? A pessoa não conseguirá entrar no app até reativar.`
+        : `Reativar ${user.displayName}?`,
+    );
+    if (!ok) return;
+
+    setBusyId(user.id);
+    setError(null);
+    try {
+      await setUserDisabledByAdmin(user.id, next);
+      setNote(
+        next
+          ? `${user.displayName} desativado no Firebase.`
+          : `${user.displayName} reativado no Firebase.`,
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Falha ao atualizar status.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  if (!ready) {
+    return (
+      <div className="bkf-panel">
+        <p className="bkf-empty">Carregando usuários…</p>
+      </div>
     );
   }
 
-  if (seed.length === 0) {
+  if (appId !== "angels_care") {
     return (
       <div className="bkf-panel">
-        <p className="bkf-empty">Nenhum usuário de demonstração para este app.</p>
+        <p className="bkf-empty">Usuários ainda não disponíveis para este app.</p>
       </div>
     );
   }
@@ -59,8 +104,8 @@ export function UsersModule({ appId }: Props) {
         <div>
           <h2 className="bkf-panel__title">Usuários</h2>
           <p className="bkf-panel__sub">
-            MVP com dados de demonstração. Ativar/desativar ainda não grava no
-            Firebase do Angel&apos;s Care (próximo passo, custo zero).
+            Lista ao vivo do Firebase Angel&apos;s Care. Ativar/desativar grava
+            na conta (bloqueia login se desativado pelo BKF).
           </p>
         </div>
         <p className="bkf-panel__count">{filtered.length} exibidos</p>
@@ -94,6 +139,11 @@ export function UsersModule({ appId }: Props) {
         </div>
       </div>
 
+      {error ? (
+        <p className="bkf-toast" style={{ color: "#b00020" }}>
+          {error}
+        </p>
+      ) : null}
       {note ? <p className="bkf-toast">{note}</p> : null}
 
       <div className="bkf-table-wrap">
@@ -135,19 +185,33 @@ export function UsersModule({ appId }: Props) {
                   )}
                 </td>
                 <td className="bkf-mono">
-                  {new Date(u.lastActiveAt).toLocaleString("pt-BR")}
+                  {u.lastActiveAt
+                    ? new Date(u.lastActiveAt).toLocaleString("pt-BR")
+                    : "—"}
                 </td>
                 <td>
                   <button
                     type="button"
                     className="bkf-action"
-                    onClick={() => toggleDisabled(u.id)}
+                    disabled={busyId === u.id}
+                    onClick={() => toggleDisabled(u)}
                   >
-                    {u.accountDisabled ? "Ativar" : "Desativar"}
+                    {busyId === u.id
+                      ? "…"
+                      : u.accountDisabled
+                        ? "Ativar"
+                        : "Desativar"}
                   </button>
                 </td>
               </tr>
             ))}
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={6}>
+                  <p className="bkf-empty">Nenhum usuário neste filtro.</p>
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>
