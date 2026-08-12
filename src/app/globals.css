@@ -958,6 +958,7 @@ body {
 
 .bkf-table-wrap {
   overflow: auto;
+  max-height: min(70vh, 52rem);
   border: 1px solid #e5e7eb;
   border-radius: 0.75rem;
 }
