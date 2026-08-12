@@ -712,6 +712,9 @@ body {
 @media (min-width: 900px) {
   .bkf {
     grid-template-columns: 16.5rem 1fr;
+    height: 100svh;
+    max-height: 100svh;
+    overflow: hidden;
   }
 }
 
@@ -831,6 +834,16 @@ body {
 
 .bkf__main {
   min-width: 0;
+  min-height: 0;
+}
+
+@media (min-width: 900px) {
+  .bkf__main {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
 }
 
 .bkf__top {
@@ -869,6 +882,16 @@ body {
 
 .bkf__content {
   padding: 1.25rem;
+}
+
+@media (min-width: 900px) {
+  .bkf__content {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 .bkf-panel {
@@ -1091,6 +1114,14 @@ body {
   min-height: calc(100svh - 7.5rem);
 }
 
+@media (min-width: 900px) {
+  .chatq {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+  }
+}
+
 @media (min-width: 960px) {
   .chatq {
     grid-template-columns: minmax(17rem, 22rem) 1fr;
@@ -1104,6 +1135,14 @@ body {
   border: 1px solid #e5e7eb;
   border-radius: 1rem;
   min-height: 28rem;
+}
+
+@media (min-width: 900px) {
+  .chatq__queue,
+  .chatq__thread {
+    min-height: 0;
+    height: 100%;
+  }
 }
 
 .chatq__queue {
@@ -1216,6 +1255,7 @@ body {
 }
 
 .chatq__thread-head {
+  flex-shrink: 0;
   padding: 0.9rem 1rem;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
@@ -1244,6 +1284,7 @@ body {
 }
 
 .chatq__assignee {
+  flex-shrink: 0;
   padding: 0.45rem 1rem;
   font-size: 0.78rem;
   color: #6b7280;
@@ -1252,13 +1293,16 @@ body {
 }
 
 .chatq__messages {
-  flex: 1;
-  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
   background: #f8fafc;
+  overscroll-behavior: contain;
 }
 
 .chatq__bubble {
@@ -1322,6 +1366,12 @@ body {
   border-color: #fed7aa;
 }
 
+.chatq__footer {
+  flex-shrink: 0;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+}
+
 .chatq__macros {
   display: flex;
   flex-wrap: wrap;
@@ -1333,7 +1383,6 @@ body {
   display: grid;
   gap: 0.55rem;
   padding: 0.75rem 1rem 1rem;
-  border-top: 1px solid #e5e7eb;
 }
 
 .chatq__textarea {
@@ -1344,6 +1393,7 @@ body {
   font: inherit;
   resize: vertical;
   min-height: 4.5rem;
+  max-height: 10rem;
 }
 
 .chatq__composer .pill {

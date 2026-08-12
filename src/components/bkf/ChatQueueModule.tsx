@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   supportMacrosFor,
   priorityLabel,
@@ -49,6 +49,7 @@ export function ChatQueueModule({ appId }: Props) {
   const [operatorName, setOperatorName] = useState("");
   const [nameDraft, setNameDraft] = useState("");
   const [nameReady, setNameReady] = useState(false);
+  const messagesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try {
@@ -138,6 +139,12 @@ export function ChatQueueModule({ appId }: Props) {
     );
     return () => unsub();
   }, [selectedId, selected?.userName]);
+
+  useEffect(() => {
+    const el = messagesRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages, selectedId]);
 
   const queue = useMemo(() => {
     const list =
@@ -476,7 +483,7 @@ export function ChatQueueModule({ appId }: Props) {
               )}
             </div>
 
-            <div className="chatq__messages">
+            <div className="chatq__messages" ref={messagesRef}>
               {messages.map((m) => (
                 <div
                   key={m.id}
@@ -518,37 +525,39 @@ export function ChatQueueModule({ appId }: Props) {
               ))}
             </div>
 
-            <div className="chatq__macros">
-              {macros.map((macro) => (
-                <button
-                  key={macro.id}
-                  type="button"
-                  className="bkf-chip"
-                  onClick={() => applyMacro(macro.body)}
-                  title={macro.body}
-                >
-                  {macro.title}
-                </button>
-              ))}
-            </div>
+            <div className="chatq__footer">
+              <div className="chatq__macros">
+                {macros.map((macro) => (
+                  <button
+                    key={macro.id}
+                    type="button"
+                    className="bkf-chip"
+                    onClick={() => applyMacro(macro.body)}
+                    title={macro.body}
+                  >
+                    {macro.title}
+                  </button>
+                ))}
+              </div>
 
-            <form className="chatq__composer" onSubmit={sendReply}>
-              <textarea
-                className="chatq__textarea"
-                rows={3}
-                placeholder="Escreva a resposta ao usuário…"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                disabled={busy}
-              />
-              <button
-                type="submit"
-                className="pill pill-blue"
-                disabled={!draft.trim() || busy}
-              >
-                {busy ? "Enviando…" : "Enviar"}
-              </button>
-            </form>
+              <form className="chatq__composer" onSubmit={sendReply}>
+                <textarea
+                  className="chatq__textarea"
+                  rows={3}
+                  placeholder="Escreva a resposta ao usuário…"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  disabled={busy}
+                />
+                <button
+                  type="submit"
+                  className="pill pill-blue"
+                  disabled={!draft.trim() || busy}
+                >
+                  {busy ? "Enviando…" : "Enviar"}
+                </button>
+              </form>
+            </div>
           </>
         )}
       </section>
