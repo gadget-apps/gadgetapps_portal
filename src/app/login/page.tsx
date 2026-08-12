@@ -139,7 +139,7 @@ export default function LoginPage() {
         }}
       >
         <p className="section__eyebrow">Acesso interno</p>
-        <h1 className="section__title">Área colaborador</h1>
+        <h1 className="section__title">Intranet</h1>
         <p className="section__lead">
           {mode === "login"
             ? "Use a conta criada em Firebase Authentication (projeto Angel’s Care)."

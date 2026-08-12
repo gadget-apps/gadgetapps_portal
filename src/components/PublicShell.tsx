@@ -39,7 +39,7 @@ export function SiteHeader({ on = "page" }: { on?: "hero" | "page" }) {
             href="/login/"
             className={`pill ${on === "hero" && !scrolled ? "pill-light" : "pill-dark"}`}
           >
-            Colaborador
+            Intranet
           </Link>
         </nav>
       </div>

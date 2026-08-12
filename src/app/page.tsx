@@ -44,7 +44,7 @@ export default function HomePage() {
                 Ver produtos
               </a>
               <Link href="/login/" className="pill pill-ghost">
-                Área colaborador
+                Intranet
               </Link>
             </div>
           </div>
@@ -185,7 +185,7 @@ export default function HomePage() {
               <Link href="/login/" className="bento__cell bento__cell--dark bento__cell--span2">
                 <div>
                   <p className="bento__kicker">Intranet</p>
-                  <h3 className="bento__title">Área colaborador</h3>
+                  <h3 className="bento__title">Intranet</h3>
                   <p className="bento__text">
                     Acesso da equipe ao hub interno da Gadget Apps.
                   </p>
@@ -238,7 +238,7 @@ export default function HomePage() {
           <div className="section">
             <Reveal>
               <p className="section__eyebrow">Equipe</p>
-              <h2 className="section__title">Área colaborador</h2>
+              <h2 className="section__title">Intranet</h2>
               <p className="section__lead">
                 Intranet com Backoffice (BKF) e espaço para novos módulos
                 internos.
