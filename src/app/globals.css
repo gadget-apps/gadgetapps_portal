@@ -85,7 +85,7 @@ body {
   border: 0;
 }
 
-/* âââ Header âââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Header Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 .topbar {
   position: fixed;
   inset: 0 0 auto;
@@ -137,13 +137,19 @@ body {
 }
 
 .brand__logo--lg {
+  display: block;
   height: clamp(2.75rem, 6vw, 3.5rem);
+  width: auto;
   max-width: min(70vw, 16rem);
+  object-fit: contain;
 }
 
 .brand__logo--footer {
+  display: block;
   height: 3rem;
+  width: auto;
   max-width: 14rem;
+  object-fit: contain;
 }
 
 .topbar[data-on="hero"]:not([data-scrolled="true"]) .brand__logo {
@@ -188,8 +194,11 @@ body {
 }
 
 .bento__mark--lg {
+  display: block;
   width: min(46%, 9.5rem);
+  height: auto;
   margin: 0 auto 1rem;
+  object-fit: contain;
 }
 
 .bento__cell--brand {
@@ -285,7 +294,7 @@ body {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* âââ Hero fotogrÃ¡fico full-bleed âââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Hero fotogrÃÂ¡fico full-bleed Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 .hero {
   position: relative;
   min-height: 100svh;
@@ -361,7 +370,7 @@ body {
   margin-top: 1.75rem;
 }
 
-/* âââ Sections âââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Sections Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 .section {
   width: min(1120px, calc(100% - 2.5rem));
   margin-inline: auto;
@@ -394,7 +403,7 @@ body {
   line-height: 1.5;
 }
 
-/* Product spotlight â Apple-style full-bleed panel */
+/* Product spotlight Ã¢ÂÂ Apple-style full-bleed panel */
 .spotlight {
   margin-top: 3rem;
   border-radius: 1.75rem;
@@ -465,7 +474,7 @@ body {
   opacity: 0.75;
 }
 
-/* âââ Bento grid (Apple / Linear) âââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Bento grid (Apple / Linear) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 .bento {
   margin-top: 2.5rem;
   display: grid;
@@ -701,7 +710,7 @@ body {
   }
 }
 
-/* âââ BKF console âââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ BKF console Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 .bkf {
   display: grid;
   min-height: 100svh;

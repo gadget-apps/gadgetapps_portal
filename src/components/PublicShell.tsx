@@ -25,8 +25,8 @@ export function SiteHeader({ on = "page" }: { on?: "hero" | "page" }) {
           <Image
             src="/brand/gadget_apps_logo.png"
             alt="Gadget Apps Technology"
-            width={280}
-            height={72}
+            width={676}
+            height={369}
             className="brand__logo"
             priority
           />
@@ -58,8 +58,8 @@ export function SiteFooter() {
           <Image
             src="/brand/gadget_apps_logo.png"
             alt="Gadget Apps Technology"
-            width={320}
-            height={82}
+            width={676}
+            height={369}
             className="brand__logo--footer"
           />
           <p className="footer__meta" style={{ marginTop: "0.75rem" }}>

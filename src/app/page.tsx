@@ -30,8 +30,9 @@ export default function HomePage() {
               <Image
                 src="/brand/gadget_apps_logo.png"
                 alt="Gadget Apps Technology"
-                width={480}
-                height={140}
+                width={676}
+                height={369}
+                className="brand__logo--lg"
                 priority
               />
             </div>
@@ -173,8 +174,8 @@ export default function HomePage() {
                 <Image
                   src="/brand/gadget_apps_logo.png"
                   alt="Gadget Apps Technology"
-                  width={280}
-                  height={90}
+                  width={676}
+                  height={369}
                   className="bento__mark--lg"
                 />
                 <p className="bento__text">
