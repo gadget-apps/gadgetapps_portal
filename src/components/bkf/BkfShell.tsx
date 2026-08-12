@@ -148,9 +148,6 @@ export function BkfShell({ app, children }: Props) {
             <p className="bkf__eyebrow">Backoffice · BKF</p>
             <h1 className="bkf__title">{app.name}</h1>
           </div>
-          <span className="bkf__badge" style={{ background: app.accentColor }}>
-            Operando: {app.name}
-          </span>
         </header>
         <div className="bkf__content">{children}</div>
       </div>
