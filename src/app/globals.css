@@ -1124,7 +1124,7 @@ body {
 
 @media (min-width: 960px) {
   .chatq {
-    grid-template-columns: minmax(17rem, 22rem) 1fr;
+    grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
     align-items: stretch;
   }
 }
@@ -1141,6 +1141,7 @@ body {
   .chatq__queue,
   .chatq__thread {
     min-height: 0;
+    min-width: 0;
     height: 100%;
   }
 }
@@ -1149,7 +1150,9 @@ body {
   padding: 1rem;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
+  overflow: hidden;
 }
 
 .chatq__queue-head {
@@ -1160,20 +1163,32 @@ body {
   list-style: none;
   margin: 0;
   padding: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   flex: 1;
+  min-width: 0;
   display: grid;
   gap: 0.4rem;
+  align-content: start;
+}
+
+.chatq__list > li {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .chatq__item {
+  display: block;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   text-align: left;
   border: 1px solid #e5e7eb;
   background: #fff;
   border-radius: 0.75rem;
   padding: 0.7rem 0.75rem;
   cursor: pointer;
+  overflow: hidden;
 }
 
 .chatq__item:hover {
@@ -1190,9 +1205,18 @@ body {
   justify-content: space-between;
   gap: 0.5rem;
   align-items: center;
+  min-width: 0;
+}
+
+.chatq__item-top strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chatq__unread {
+  flex-shrink: 0;
   min-width: 1.25rem;
   height: 1.25rem;
   border-radius: 999px;
@@ -1221,6 +1245,7 @@ body {
   gap: 0.4rem;
   font-size: 0.7rem;
   color: #6b7280;
+  min-width: 0;
 }
 
 .chatq__prio {
