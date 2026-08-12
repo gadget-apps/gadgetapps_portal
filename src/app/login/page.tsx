@@ -10,10 +10,8 @@ import {
   signOut,
 } from "firebase/auth";
 import { SiteFooter, SiteHeader } from "@/components/PublicShell";
-import { claimBkfAccess } from "@/lib/bkf/operators";
+import { claimBkfAccess, writeBkfSession, clearBkfSession } from "@/lib/bkf/operators";
 import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
-
-const DEMO_FLAG = "gat_intranet_demo";
 
 type Mode = "login" | "register";
 
@@ -31,7 +29,7 @@ function mapAuthError(err: unknown): string {
     case "auth/invalid-credential":
     case "auth/wrong-password":
     case "auth/user-not-found":
-      return "E-mail ou senha incorretos. Confira se o e-mail é exatamente gadget.apps.technology@gmail.com e se a senha é a do Firebase Authentication (não a do Gmail).";
+      return "E-mail ou senha incorretos. Se for o primeiro acesso, use Aceitar convite.";
     case "auth/too-many-requests":
       return "Muitas tentativas. Aguarde alguns minutos ou redefina a senha.";
     case "auth/operation-not-allowed":
@@ -56,7 +54,7 @@ function mapAuthError(err: unknown): string {
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
-  const [email, setEmail] = useState("gadget.apps.technology@gmail.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
@@ -66,13 +64,10 @@ export default function LoginPage() {
     const claim = await claimBkfAccess({ uid, email: userEmail });
     if (!claim.ok) {
       await signOut(getAngelsCareAuth());
-      sessionStorage.removeItem(DEMO_FLAG);
+      clearBkfSession();
       throw new Error(claim.reason);
     }
-    sessionStorage.setItem(
-      DEMO_FLAG,
-      JSON.stringify({ email: userEmail, uid }),
-    );
+    writeBkfSession(userEmail, uid);
     router.push("/intranet/");
   }
 

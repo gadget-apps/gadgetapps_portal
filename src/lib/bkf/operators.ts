@@ -9,10 +9,14 @@ import {
   updateDoc,
   type Unsubscribe,
 } from "firebase/firestore";
+import type { User } from "firebase/auth";
 import { getAngelsCareAuth, getAngelsCareDb } from "@/lib/firebase/angels-care";
 
 /** Único e-mail que pode virar o 1º admin sem convite (bootstrap). */
 export const BKF_BOOTSTRAP_EMAIL = "gadget.apps.technology@gmail.com";
+
+export const BKF_SESSION_KEY = "gat_intranet_demo";
+const SESSION_TTL_MS = 15 * 60 * 1000;
 
 export type BkfOperator = {
   uid: string;
@@ -27,6 +31,12 @@ export type BkfInvite = {
   status: "pending" | "accepted" | "revoked";
   invitedByEmail: string;
   createdAt: string;
+};
+
+type BkfSession = {
+  email: string;
+  uid: string;
+  okAt: number;
 };
 
 function tsToIso(value: unknown): string {
@@ -50,6 +60,68 @@ export function isBootstrapEmail(email: string | null | undefined): boolean {
   return normalizeEmail(email ?? "") === BKF_BOOTSTRAP_EMAIL;
 }
 
+export function readBkfSession(): BkfSession | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(BKF_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<BkfSession>;
+    if (!parsed.uid || !parsed.email) return null;
+    return {
+      email: String(parsed.email),
+      uid: String(parsed.uid),
+      okAt: Number(parsed.okAt ?? 0),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function writeBkfSession(email: string, uid: string): void {
+  sessionStorage.setItem(
+    BKF_SESSION_KEY,
+    JSON.stringify({
+      email: normalizeEmail(email),
+      uid,
+      okAt: Date.now(),
+    } satisfies BkfSession),
+  );
+}
+
+export function clearBkfSession(): void {
+  sessionStorage.removeItem(BKF_SESSION_KEY);
+}
+
+/** Gate rápido: cache de sessão → senão 1 leitura Firestore (sem write). */
+export async function ensureBkfSession(
+  user: User,
+): Promise<{ ok: true; email: string } | { ok: false; reason: string }> {
+  const email = normalizeEmail(user.email ?? "");
+  if (!email) {
+    return { ok: false, reason: "Sessão sem e-mail." };
+  }
+
+  const cached = readBkfSession();
+  if (
+    cached &&
+    cached.uid === user.uid &&
+    Date.now() - cached.okAt < SESSION_TTL_MS
+  ) {
+    return { ok: true, email: cached.email };
+  }
+
+  const allowed = await hasBkfOperatorAccess(user.uid);
+  if (allowed) {
+    writeBkfSession(email, user.uid);
+    return { ok: true, email };
+  }
+
+  const claim = await claimBkfAccess({ uid: user.uid, email });
+  if (!claim.ok) return claim;
+  writeBkfSession(email, user.uid);
+  return { ok: true, email };
+}
+
 /** Após Auth: vira operador se bootstrap, convite pendente ou já era operador. */
 export async function claimBkfAccess(params: {
   uid: string;
@@ -65,11 +137,7 @@ export async function claimBkfAccess(params: {
     if (data.active === false) {
       return { ok: false, reason: "Seu acesso ao BKF foi desativado." };
     }
-    await setDoc(
-      opRef,
-      { email, updatedAt: serverTimestamp() },
-      { merge: true },
-    );
+    // Sem write a cada login — só valida.
     return { ok: true };
   }
 

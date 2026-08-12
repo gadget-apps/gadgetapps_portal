@@ -7,10 +7,11 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useEffect, useState, type ReactNode } from "react";
 import type { CatalogApp } from "@/data/apps";
 import { BKF_MODULES } from "@/data/bkf/modules";
-import { claimBkfAccess, hasBkfOperatorAccess } from "@/lib/bkf/operators";
+import {
+  clearBkfSession,
+  ensureBkfSession,
+} from "@/lib/bkf/operators";
 import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
-
-const DEMO_FLAG = "gat_intranet_demo";
 
 type Props = {
   app: CatalogApp;
@@ -26,25 +27,17 @@ export function BkfShell({ app, children }: Props) {
   useEffect(() => {
     const unsub = onAuthStateChanged(getAngelsCareAuth(), async (user) => {
       if (!user?.email) {
-        sessionStorage.removeItem(DEMO_FLAG);
+        clearBkfSession();
         router.replace("/login/");
         return;
       }
-      const userEmail = user.email.toLowerCase();
-      const allowed = await hasBkfOperatorAccess(user.uid);
-      if (!allowed) {
-        const claim = await claimBkfAccess({ uid: user.uid, email: userEmail });
-        if (!claim.ok) {
-          sessionStorage.removeItem(DEMO_FLAG);
-          router.replace("/login/");
-          return;
-        }
+      const gate = await ensureBkfSession(user);
+      if (!gate.ok) {
+        clearBkfSession();
+        router.replace("/login/");
+        return;
       }
-      sessionStorage.setItem(
-        DEMO_FLAG,
-        JSON.stringify({ email: userEmail, uid: user.uid }),
-      );
-      setEmail(userEmail);
+      setEmail(gate.email);
       setReady(true);
     });
     return () => unsub();
@@ -56,7 +49,7 @@ export function BkfShell({ app, children }: Props) {
     } catch {
       /* ignore */
     }
-    sessionStorage.removeItem(DEMO_FLAG);
+    clearBkfSession();
     router.replace("/login/");
   }
 

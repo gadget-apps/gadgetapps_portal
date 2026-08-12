@@ -6,10 +6,8 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState } from "react";
 import { CATALOG_APPS, statusLabel } from "@/data/apps";
-import { hasBkfOperatorAccess } from "@/lib/bkf/operators";
+import { clearBkfSession, ensureBkfSession } from "@/lib/bkf/operators";
 import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
-
-const DEMO_FLAG = "gat_intranet_demo";
 
 export default function BkfCatalogPage() {
   const router = useRouter();
@@ -18,13 +16,13 @@ export default function BkfCatalogPage() {
   useEffect(() => {
     const unsub = onAuthStateChanged(getAngelsCareAuth(), async (user) => {
       if (!user) {
-        sessionStorage.removeItem(DEMO_FLAG);
+        clearBkfSession();
         router.replace("/login/");
         return;
       }
-      const allowed = await hasBkfOperatorAccess(user.uid);
-      if (!allowed) {
-        sessionStorage.removeItem(DEMO_FLAG);
+      const gate = await ensureBkfSession(user);
+      if (!gate.ok) {
+        clearBkfSession();
         router.replace("/login/");
         return;
       }

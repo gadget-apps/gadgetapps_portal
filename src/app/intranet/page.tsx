@@ -6,10 +6,11 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useEffect, useState } from "react";
 import { IntranetHeader } from "@/components/IntranetHeader";
 import { INTRANET_MODULES } from "@/data/intranet";
-import { claimBkfAccess, hasBkfOperatorAccess } from "@/lib/bkf/operators";
+import {
+  clearBkfSession,
+  ensureBkfSession,
+} from "@/lib/bkf/operators";
 import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
-
-const DEMO_FLAG = "gat_intranet_demo";
 
 export default function IntranetPage() {
   const router = useRouter();
@@ -19,26 +20,17 @@ export default function IntranetPage() {
   useEffect(() => {
     const unsub = onAuthStateChanged(getAngelsCareAuth(), async (user) => {
       if (!user?.email) {
-        sessionStorage.removeItem(DEMO_FLAG);
+        clearBkfSession();
         router.replace("/login/");
         return;
       }
-      const userEmail = user.email.toLowerCase();
-      let allowed = await hasBkfOperatorAccess(user.uid);
-      if (!allowed) {
-        const claim = await claimBkfAccess({ uid: user.uid, email: userEmail });
-        allowed = claim.ok;
-      }
-      if (!allowed) {
-        sessionStorage.removeItem(DEMO_FLAG);
+      const gate = await ensureBkfSession(user);
+      if (!gate.ok) {
+        clearBkfSession();
         router.replace("/login/");
         return;
       }
-      sessionStorage.setItem(
-        DEMO_FLAG,
-        JSON.stringify({ email: userEmail, uid: user.uid }),
-      );
-      setEmail(userEmail);
+      setEmail(gate.email);
       setReady(true);
     });
     return () => unsub();
@@ -50,7 +42,7 @@ export default function IntranetPage() {
     } catch {
       /* ignore */
     }
-    sessionStorage.removeItem(DEMO_FLAG);
+    clearBkfSession();
     router.push("/login/");
   }
 
