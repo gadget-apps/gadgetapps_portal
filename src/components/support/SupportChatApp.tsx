@@ -214,12 +214,16 @@ export function SupportChatApp() {
                 <p className="support-muted">Verificando sessão…</p>
               ) : (
                 <>
-                  <form className="support-form" onSubmit={onLogin}>
+                  <form className="support-form" onSubmit={onLogin} autoComplete="off">
                     <label>
-                      E-mail
+                      E-mail da conta do app
                       <input
                         type="email"
-                        autoComplete="email"
+                        name="support_customer_email"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="none"
+                        spellCheck={false}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
@@ -229,7 +233,8 @@ export function SupportChatApp() {
                       Senha
                       <input
                         type="password"
-                        autoComplete="current-password"
+                        name="support_customer_password"
+                        autoComplete="new-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
