@@ -35,6 +35,9 @@ export function SiteHeader({ on = "page" }: { on?: "hero" | "page" }) {
           <a href="/#produtos" className="nav-link">
             Produtos
           </a>
+          <Link href="/suporte/" className="nav-link">
+            Suporte
+          </Link>
           <Link
             href="/login/"
             className={`pill ${on === "hero" && !scrolled ? "pill-light" : "pill-dark"}`}
@@ -60,7 +63,10 @@ export function SiteFooter() {
             className="brand__logo--footer"
           />
           <p className="footer__meta" style={{ marginTop: "0.75rem" }}>
-            Produtos digitais · operação · suporte
+            Produtos digitais · operação ·{" "}
+            <Link href="/suporte/" style={{ color: "inherit" }}>
+              suporte
+            </Link>
           </p>
         </div>
         <p className="footer__meta">

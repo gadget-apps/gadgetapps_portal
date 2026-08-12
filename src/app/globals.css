@@ -1430,4 +1430,254 @@ body {
   cursor: not-allowed;
 }
 
+/* --- Public support chat --- */
+.support-page {
+  padding: 5.5rem 1.25rem 3rem;
+  background: #f5f5f7;
+  min-height: 70svh;
+}
 
+.support-page__inner {
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+.support-alert {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.9rem;
+}
+
+.support-card {
+  margin-top: 1.5rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1.25rem;
+}
+
+.support-card__title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.support-card__sub {
+  margin: 0.35rem 0 1rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.support-products {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.support-product {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  text-align: left;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+}
+
+.support-product:hover:not(:disabled) {
+  border-color: #f27421;
+  background: #fff7ed;
+}
+
+.support-product:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.support-product strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.support-product small {
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+.support-product__dot {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.65rem;
+}
+
+.support-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.support-form label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+.support-form input {
+  border: 1px solid #d1d5db;
+  border-radius: 0.65rem;
+  padding: 0.7rem 0.8rem;
+  font: inherit;
+}
+
+.support-divider {
+  display: grid;
+  place-items: center;
+  margin: 1rem 0;
+  color: #9ca3af;
+  font-size: 0.8rem;
+}
+
+.support-google {
+  width: 100%;
+  justify-content: center;
+  border: 0;
+  cursor: pointer;
+}
+
+.support-back {
+  margin-top: 1rem;
+  border: 0;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0;
+}
+
+.support-back:hover {
+  color: #f27421;
+}
+
+.support-muted {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.support-chat {
+  margin-top: 1.5rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: min(70svh, 36rem);
+  max-height: min(78svh, 42rem);
+}
+
+.support-chat__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.support-chat__head p {
+  margin: 0.2rem 0 0;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.support-chat__messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  background: #f8fafc;
+}
+
+.support-bubble {
+  max-width: min(90%, 28rem);
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.85rem;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.support-bubble.is-user {
+  align-self: flex-end;
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.support-bubble.is-staff {
+  align-self: flex-start;
+}
+
+.support-bubble p {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.support-bubble__meta {
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+
+.support-bubble__deleted {
+  font-style: italic;
+  color: #6b7280;
+}
+
+.support-chat__composer {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.support-chat__composer textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 0.75rem;
+  padding: 0.7rem 0.8rem;
+  font: inherit;
+  resize: vertical;
+  min-height: 4rem;
+  max-height: 9rem;
+}
+
+.support-chat__composer .pill {
+  justify-self: end;
+  border: 0;
+  cursor: pointer;
+}
+
+.support-chat__composer .pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.support-foot {
+  margin-top: 1.5rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.support-foot a {
+  color: #f27421;
+}

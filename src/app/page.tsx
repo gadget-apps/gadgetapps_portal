@@ -221,15 +221,16 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="bento__cell">
+              <Link href="/suporte/" className="bento__cell">
                 <div>
                   <p className="bento__kicker">Suporte</p>
                   <h3 className="bento__title">Atendimento</h3>
                   <p className="bento__text">
-                    Fila, histórico e moderação no BKF.
+                    Fale com a equipe usando sua conta do app.
                   </p>
                 </div>
-              </div>
+                <span className="bento__cta">Abrir chat →</span>
+              </Link>
             </div>
           </Reveal>
         </section>
