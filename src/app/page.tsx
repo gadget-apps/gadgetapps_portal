@@ -25,22 +25,12 @@ export default function HomePage() {
         <SiteHeader on="hero" />
         <div className="hero__body">
           <div>
-            <div className="hero__brand rise">
-              <h1 className="sr-only">Gadget Apps Technology</h1>
-              <Image
-                src="/brand/gadget_apps_logo.png"
-                alt="Gadget Apps Technology"
-                width={676}
-                height={369}
-                className="brand__logo--lg"
-                priority
-              />
-            </div>
-            <p className="hero__copy rise rise-d1">
+            <h1 className="sr-only">Gadget Apps Technology</h1>
+            <p className="hero__copy rise">
               Produtos digitais com operação séria. Entre no site oficial de
               cada app ou na área da equipe.
             </p>
-            <div className="hero__actions rise rise-d2">
+            <div className="hero__actions rise rise-d1">
               <a href="#produtos" className="pill pill-light">
                 Ver produtos
               </a>
@@ -99,13 +89,6 @@ export default function HomePage() {
                     fill
                     sizes="(max-width: 900px) 100vw, 50vw"
                     quality={85}
-                  />
-                  <Image
-                    src="/brand/angels_icon.png"
-                    alt=""
-                    width={220}
-                    height={220}
-                    className="spotlight__mark"
                   />
                 </div>
               </article>

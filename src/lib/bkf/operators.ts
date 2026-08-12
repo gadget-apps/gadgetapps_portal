@@ -248,6 +248,9 @@ export async function createInvite(emailRaw: string): Promise<void> {
   const auth = getAngelsCareAuth();
   const user = auth.currentUser;
   if (!user?.email) throw new Error("Sessão inválida.");
+  if (!isBootstrapEmail(user.email)) {
+    throw new Error("Somente o administrador pode convidar colaboradores.");
+  }
 
   const email = normalizeEmail(emailRaw);
   if (!email.includes("@")) throw new Error("E-mail inválido.");
@@ -264,6 +267,10 @@ export async function createInvite(emailRaw: string): Promise<void> {
 }
 
 export async function revokeInvite(emailRaw: string): Promise<void> {
+  const auth = getAngelsCareAuth();
+  if (!isBootstrapEmail(auth.currentUser?.email)) {
+    throw new Error("Somente o administrador pode revogar convites.");
+  }
   const email = normalizeEmail(emailRaw);
   await updateDoc(doc(getAngelsCareDb(), "bkf_invites", email), {
     status: "revoked",
@@ -275,6 +282,10 @@ export async function setOperatorActive(
   uid: string,
   active: boolean,
 ): Promise<void> {
+  const auth = getAngelsCareAuth();
+  if (!isBootstrapEmail(auth.currentUser?.email)) {
+    throw new Error("Somente o administrador pode ativar ou desativar operadores.");
+  }
   await updateDoc(doc(getAngelsCareDb(), "bkf_operators", uid), {
     active,
     updatedAt: serverTimestamp(),
@@ -285,6 +296,37 @@ export function watchOperators(
   onChange: (ops: BkfOperator[]) => void,
   onError?: (e: Error) => void,
 ): Unsubscribe {
+  const auth = getAngelsCareAuth();
+  const user = auth.currentUser;
+  if (!user) {
+    onChange([]);
+    return () => undefined;
+  }
+
+  // Admin: lista completa. Demais: só o próprio documento (regra Firestore).
+  if (!isBootstrapEmail(user.email)) {
+    return onSnapshot(
+      doc(getAngelsCareDb(), "bkf_operators", user.uid),
+      (snap) => {
+        if (!snap.exists()) {
+          onChange([]);
+          return;
+        }
+        const data = snap.data();
+        onChange([
+          {
+            uid: snap.id,
+            email: String(data.email ?? user.email ?? ""),
+            displayName: String(data.displayName ?? ""),
+            active: data.active !== false,
+            createdAt: tsToIso(data.createdAt),
+          },
+        ]);
+      },
+      (err) => onError?.(err),
+    );
+  }
+
   return onSnapshot(
     collection(getAngelsCareDb(), "bkf_operators"),
     (snap) => {

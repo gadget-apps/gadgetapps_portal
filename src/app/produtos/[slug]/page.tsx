@@ -27,14 +27,15 @@ export default async function ProductDetailPage({ params }: PageProps) {
           ← Produtos
         </Link>
         {isAngels ? (
-          <div className="product-logo-row" style={{ marginTop: "1.75rem" }}>
-            <Image src="/brand/angels_icon.png" alt="" width={72} height={72} />
+          <div style={{ marginTop: "1.75rem" }}>
+            <h1 className="sr-only">Angel&apos;s Care</h1>
             <Image
               src="/brand/angels_logo.png"
               alt="Angel's Care"
-              width={320}
-              height={120}
-              style={{ height: "3.25rem", width: "auto" }}
+              width={640}
+              height={240}
+              priority
+              className="product-detail-logo"
             />
           </div>
         ) : (

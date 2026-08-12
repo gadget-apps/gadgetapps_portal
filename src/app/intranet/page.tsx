@@ -56,11 +56,7 @@ export default function IntranetPage() {
 
   return (
     <div className="min-h-full">
-      <IntranetHeader
-        title="Intranet"
-        backHref="/"
-        backLabel="← Site público"
-      />
+      <IntranetHeader title="Intranet" />
       <main className="mx-auto max-w-5xl px-6 py-10">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
           <div>

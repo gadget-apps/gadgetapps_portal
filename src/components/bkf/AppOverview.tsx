@@ -1,15 +1,26 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { CatalogApp } from "@/data/apps";
-import { BKF_MODULES } from "@/data/bkf/modules";
+import { modulesForRole } from "@/data/bkf/modules";
 import { LiveQueuePriorityBadges } from "@/components/bkf/LiveQueuePriorityBadges";
+import { isBootstrapEmail } from "@/lib/bkf/operators";
+import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
 
 type Props = {
   app: CatalogApp;
 };
 
 export function AppOverview({ app }: Props) {
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    setIsAdmin(isBootstrapEmail(getAngelsCareAuth().currentUser?.email));
+  }, []);
+
+  const modules = modulesForRole(isAdmin);
+
   return (
     <>
       <div className="bkf-panel" style={{ marginBottom: "0.85rem" }}>
@@ -17,8 +28,9 @@ export function AppOverview({ app }: Props) {
           <div>
             <h2 className="bkf-panel__title">Prioridade: atendimento</h2>
             <p className="bkf-panel__sub">
-              Comece pela fila de chat. Usuários, Premium e demais módulos vêm
-              na sequência.
+              {isAdmin
+                ? "Comece pela fila de chat. Usuários, Premium e demais módulos vêm na sequência."
+                : "Sua área de trabalho é o Chat / fila. Defina seu nome de atendimento antes de responder."}
             </p>
             <div style={{ marginTop: "0.75rem" }}>
               <LiveQueuePriorityBadges appId={app.appId} />
@@ -33,7 +45,7 @@ export function AppOverview({ app }: Props) {
         </div>
       </div>
       <div className="bkf-grid">
-        {BKF_MODULES.map((mod) => (
+        {modules.map((mod) => (
           <Link
             key={mod.id}
             href={`/intranet/bkf/apps/${app.appId}/${mod.id}/`}

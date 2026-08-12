@@ -54,21 +54,6 @@ export function SiteFooter() {
   return (
     <footer className="footer">
       <div className="footer__inner">
-        <div className="footer__brand">
-          <Image
-            src="/brand/gadget_apps_logo.png"
-            alt="Gadget Apps Technology"
-            width={676}
-            height={369}
-            className="brand__logo--footer"
-          />
-          <p className="footer__meta">
-            Produtos digitais · operação ·{" "}
-            <Link href="/suporte/" style={{ color: "inherit" }}>
-              suporte
-            </Link>
-          </p>
-        </div>
         <p className="footer__meta">
           © {new Date().getFullYear()} · gadgetapps-portal.web.app
         </p>

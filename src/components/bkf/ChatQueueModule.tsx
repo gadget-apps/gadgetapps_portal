@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
 import {
   supportMacrosFor,
   priorityLabel,
@@ -62,21 +63,29 @@ export function ChatQueueModule({ appId }: Props) {
       /* ignore */
     }
 
-    const uid = getAngelsCareAuth().currentUser?.uid;
-    if (!uid) return;
-    void getOperatorProfile(uid).then((profile) => {
-      if (!profile) return;
-      setOperatorEmail(profile.email || operatorEmail);
-      if (profile.hasPersonalizedName) {
-        setOperatorName(profile.displayName);
-        setNameDraft(profile.displayName);
-        setNameReady(true);
-      } else {
-        setOperatorName("");
-        setNameDraft("");
-        setNameReady(false);
-      }
+    const unsub = onAuthStateChanged(getAngelsCareAuth(), (user) => {
+      if (!user?.uid) return;
+      if (user.email) setOperatorEmail(user.email);
+      void getOperatorProfile(user.uid).then((profile) => {
+        if (!profile) {
+          setOperatorName("");
+          setNameDraft("");
+          setNameReady(false);
+          return;
+        }
+        setOperatorEmail(profile.email || user.email || "");
+        if (profile.hasPersonalizedName) {
+          setOperatorName(profile.displayName);
+          setNameDraft(profile.displayName);
+          setNameReady(true);
+        } else {
+          setOperatorName("");
+          setNameDraft(profile.displayName || "");
+          setNameReady(false);
+        }
+      });
     });
+    return () => unsub();
   }, []);
 
   const macros = useMemo(
@@ -316,39 +325,50 @@ export function ChatQueueModule({ appId }: Props) {
           </p>
         ) : null}
 
-        {!nameReady ? (
-          <form
-            onSubmit={saveAttendantName}
+        <form
+          onSubmit={saveAttendantName}
+          style={{
+            marginBottom: "0.9rem",
+            padding: "0.85rem",
+            borderRadius: "0.75rem",
+            border: nameReady ? "1px solid var(--line, #e5e7eb)" : "1px solid #f59e0b",
+            background: nameReady ? "var(--soft, #f5f5f7)" : "#fffbeb",
+            display: "grid",
+            gap: "0.5rem",
+          }}
+        >
+          <strong style={{ fontSize: "0.9rem" }}>
+            Meu nome de atendimento
+          </strong>
+          <p
             style={{
-              marginBottom: "0.9rem",
-              padding: "0.85rem",
-              borderRadius: "0.75rem",
-              border: "1px solid #f59e0b",
-              background: "#fffbeb",
-              display: "grid",
-              gap: "0.5rem",
+              margin: 0,
+              fontSize: "0.8rem",
+              color: nameReady ? "#6b7280" : "#92400e",
             }}
           >
-            <strong style={{ fontSize: "0.9rem" }}>
-              Como você quer ser chamado no atendimento?
-            </strong>
-            <p style={{ margin: 0, fontSize: "0.8rem", color: "#92400e" }}>
-              Esse nome aparece na saudação. Não usamos o e-mail.
-            </p>
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              <input
-                className="bkf-input"
-                value={nameDraft}
-                onChange={(e) => setNameDraft(e.target.value)}
-                placeholder="Ex.: Márcio"
-                style={{ flex: "1 1 160px" }}
-              />
-              <button type="submit" className="pill pill-blue">
-                Salvar nome
-              </button>
-            </div>
-          </form>
-        ) : null}
+            {nameReady
+              ? "Usado na saudação automática. Você pode alterar quando quiser."
+              : "Obrigatório antes de atender. Esse nome aparece na saudação (não usamos o e-mail)."}
+          </p>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <input
+              className="bkf-input"
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+              placeholder="Ex.: Márcio"
+              style={{ flex: "1 1 160px" }}
+              aria-label="Nome de atendimento"
+            />
+            <button
+              type="submit"
+              className="pill pill-blue"
+              disabled={busy || !nameDraft.trim()}
+            >
+              Salvar nome
+            </button>
+          </div>
+        </form>
 
         <div className="bkf-filters" style={{ marginBottom: "0.75rem" }}>
           {(

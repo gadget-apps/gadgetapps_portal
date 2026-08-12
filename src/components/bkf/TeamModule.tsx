@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   createInvite,
+  isBootstrapEmail,
   revokeInvite,
   setOperatorActive,
   updateMyDisplayName,
@@ -22,7 +23,11 @@ export function TeamModule() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string | null>(null);
-  const myUid = getAngelsCareAuth().currentUser?.uid ?? "";
+
+  const authUser = getAngelsCareAuth().currentUser;
+  const myUid = authUser?.uid ?? "";
+  const myEmail = authUser?.email ?? "";
+  const isAdmin = isBootstrapEmail(myEmail);
 
   useEffect(() => {
     const u1 = watchOperators(
@@ -37,15 +42,28 @@ export function TeamModule() {
         setError(e.message);
       },
     );
-    const u2 = watchInvites(setInvites, (e) => setError(e.message));
+    let u2 = () => {};
+    if (isAdmin) {
+      u2 = watchInvites(setInvites, (e) => setError(e.message));
+    }
     return () => {
       u1();
       u2();
     };
-  }, [myUid]);
+  }, [myUid, isAdmin]);
+
+  const me = useMemo(
+    () => operators.find((o) => o.uid === myUid) ?? null,
+    [operators, myUid],
+  );
+
+  const visibleOperators = isAdmin
+    ? operators
+    : operators.filter((o) => o.uid === myUid);
 
   async function onInvite(e: FormEvent) {
     e.preventDefault();
+    if (!isAdmin) return;
     setError(null);
     setOkMsg(null);
     const trimmed = email.trim();
@@ -95,7 +113,9 @@ export function TeamModule() {
         <div>
           <h2 className="bkf-panel__title">Equipe BKF</h2>
           <p className="bkf-panel__sub">
-            Defina seu nome de atendimento e convide colaboradores pelo e-mail.
+            {isAdmin
+              ? "Defina seu nome de atendimento e convide colaboradores pelo e-mail."
+              : "Defina seu nome de atendimento. Somente o administrador gerencia a equipe."}
           </p>
         </div>
       </div>
@@ -134,103 +154,133 @@ export function TeamModule() {
         </button>
       </form>
 
-      <form
-        onSubmit={onInvite}
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "0.6rem",
-          marginBottom: "1.5rem",
-          alignItems: "center",
-        }}
-      >
-        <input
-          className="bkf-input"
-          type="email"
-          placeholder="colaborador@empresa.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          disabled={busy}
-          style={{ minWidth: "240px", flex: "1 1 220px" }}
-        />
-        <button
-          type="submit"
-          className="pill pill-blue"
-          disabled={busy || !email.trim()}
+      {!isAdmin ? (
+        <div
+          style={{
+            marginBottom: "1.5rem",
+            padding: "0.85rem 1rem",
+            border: "1px solid var(--line, #e5e7eb)",
+            borderRadius: "0.75rem",
+            background: "var(--soft, #f5f5f7)",
+          }}
         >
-          {busy ? "Enviando…" : "Convidar"}
-        </button>
-      </form>
+          <h3 style={{ fontSize: "0.95rem", margin: "0 0 0.35rem" }}>
+            Sua conta
+          </h3>
+          <p style={{ margin: 0, fontSize: "0.9rem" }}>
+            <strong>{me?.email || myEmail}</strong>
+          </p>
+          <p style={{ margin: "0.25rem 0 0", fontSize: "0.8rem", color: "#6b7280" }}>
+            {me?.active === false ? "Desativado" : "Ativo"}
+            {myName.trim() ? ` · Nome: ${myName.trim()}` : ""}
+          </p>
+        </div>
+      ) : null}
 
-      <h3 style={{ fontSize: "0.95rem", margin: "0 0 0.5rem" }}>Operadores</h3>
-      <ul style={{ listStyle: "none", padding: 0, margin: "0 0 1.5rem" }}>
-        {operators.map((op) => (
-          <li
-            key={op.uid}
+      {isAdmin ? (
+        <>
+          <form
+            onSubmit={onInvite}
             style={{
               display: "flex",
-              justifyContent: "space-between",
-              gap: "0.75rem",
-              padding: "0.65rem 0",
-              borderBottom: "1px solid var(--line, #e5e7eb)",
+              flexWrap: "wrap",
+              gap: "0.6rem",
+              marginBottom: "1.5rem",
               alignItems: "center",
             }}
           >
-            <div>
-              <strong>{op.email}</strong>
-              <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
-                {op.active ? "Ativo" : "Desativado"}
-              </div>
-            </div>
+            <input
+              className="bkf-input"
+              type="email"
+              placeholder="colaborador@empresa.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={busy}
+              style={{ minWidth: "240px", flex: "1 1 220px" }}
+            />
             <button
-              type="button"
-              className="bkf-action"
-              onClick={() => setOperatorActive(op.uid, !op.active)}
+              type="submit"
+              className="pill pill-blue"
+              disabled={busy || !email.trim()}
             >
-              {op.active ? "Desativar" : "Reativar"}
+              {busy ? "Enviando…" : "Convidar"}
             </button>
-          </li>
-        ))}
-        {operators.length === 0 ? (
-          <li className="bkf-empty">Nenhum operador ainda.</li>
-        ) : null}
-      </ul>
+          </form>
 
-      <h3 style={{ fontSize: "0.95rem", margin: "0 0 0.5rem" }}>
-        Convites pendentes
-      </h3>
-      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-        {pending.map((inv) => (
-          <li
-            key={inv.email}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: "0.75rem",
-              padding: "0.65rem 0",
-              borderBottom: "1px solid var(--line, #e5e7eb)",
-              alignItems: "center",
-            }}
-          >
-            <div>
-              <strong>{inv.email}</strong>
-              <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
-                por {inv.invitedByEmail || "—"}
-              </div>
-            </div>
-            <button
-              type="button"
-              className="bkf-action"
-              onClick={() => revokeInvite(inv.email)}
-            >
-              Revogar
-            </button>
-          </li>
-        ))}
-        {pending.length === 0 ? (
-          <li className="bkf-empty">Nenhum convite pendente.</li>
-        ) : null}
-      </ul>
+          <h3 style={{ fontSize: "0.95rem", margin: "0 0 0.5rem" }}>
+            Operadores
+          </h3>
+          <ul style={{ listStyle: "none", padding: 0, margin: "0 0 1.5rem" }}>
+            {visibleOperators.map((op) => (
+              <li
+                key={op.uid}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "0.75rem",
+                  padding: "0.65rem 0",
+                  borderBottom: "1px solid var(--line, #e5e7eb)",
+                  alignItems: "center",
+                }}
+              >
+                <div>
+                  <strong>{op.email}</strong>
+                  <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+                    {op.active ? "Ativo" : "Desativado"}
+                    {op.displayName ? ` · ${op.displayName}` : ""}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="bkf-action"
+                  onClick={() => setOperatorActive(op.uid, !op.active)}
+                >
+                  {op.active ? "Desativar" : "Reativar"}
+                </button>
+              </li>
+            ))}
+            {visibleOperators.length === 0 ? (
+              <li className="bkf-empty">Nenhum operador ainda.</li>
+            ) : null}
+          </ul>
+
+          <h3 style={{ fontSize: "0.95rem", margin: "0 0 0.5rem" }}>
+            Convites pendentes
+          </h3>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            {pending.map((inv) => (
+              <li
+                key={inv.email}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "0.75rem",
+                  padding: "0.65rem 0",
+                  borderBottom: "1px solid var(--line, #e5e7eb)",
+                  alignItems: "center",
+                }}
+              >
+                <div>
+                  <strong>{inv.email}</strong>
+                  <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+                    por {inv.invitedByEmail || "—"}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="bkf-action"
+                  onClick={() => revokeInvite(inv.email)}
+                >
+                  Revogar
+                </button>
+              </li>
+            ))}
+            {pending.length === 0 ? (
+              <li className="bkf-empty">Nenhum convite pendente.</li>
+            ) : null}
+          </ul>
+        </>
+      ) : null}
     </div>
   );
 }

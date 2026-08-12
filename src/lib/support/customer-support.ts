@@ -103,6 +103,25 @@ export async function signOutCustomer(): Promise<void> {
   await signOut(getAngelsCareAuth());
 }
 
+/** Flag síncrono: o signOut do Firebase pode não terminar antes da navegação. */
+export const SUPPORT_FORCE_LOGOUT_KEY = "ga_support_force_logout";
+
+export function markCustomerSupportLeft(): void {
+  try {
+    sessionStorage.setItem(SUPPORT_FORCE_LOGOUT_KEY, "1");
+  } catch {
+    /* private mode / blocked storage */
+  }
+}
+
+export function clearCustomerSupportLeaveMark(): void {
+  try {
+    sessionStorage.removeItem(SUPPORT_FORCE_LOGOUT_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 export async function ensureCustomerThread(params: {
   appId: SupportProductId;
   source: SupportSource;

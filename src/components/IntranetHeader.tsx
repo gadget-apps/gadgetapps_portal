@@ -12,20 +12,26 @@ export function IntranetHeader({
   title,
   badge,
   badgeColor = "#0F766E",
-  backHref = "/intranet/",
+  backHref,
   backLabel = "← Intranet",
 }: Props) {
   return (
     <header className="border-b border-border bg-surface">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-6 py-4">
         <div>
-          <Link
-            href={backHref}
-            className="text-xs font-medium text-muted hover:text-foreground"
+          {backHref ? (
+            <Link
+              href={backHref}
+              className="text-xs font-medium text-muted hover:text-foreground"
+            >
+              {backLabel}
+            </Link>
+          ) : null}
+          <h1
+            className={`text-xl font-semibold tracking-tight ${backHref ? "mt-1" : ""}`}
           >
-            {backLabel}
-          </Link>
-          <h1 className="mt-1 text-xl font-semibold tracking-tight">{title}</h1>
+            {title}
+          </h1>
         </div>
         {badge ? (
           <span

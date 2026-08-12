@@ -8,8 +8,10 @@ import type { User } from "firebase/auth";
 import { CATALOG_APPS } from "@/data/apps";
 import { SiteFooter, SiteHeader } from "@/components/PublicShell";
 import {
+  clearCustomerSupportLeaveMark,
   ensureCustomerThread,
   mapAuthError,
+  markCustomerSupportLeft,
   sendCustomerMessage,
   signInCustomerEmail,
   signOutCustomer,
@@ -64,10 +66,80 @@ export function SupportChatApp() {
   }, [initialProduct]);
 
   useEffect(() => {
-    return watchCustomerAuth((next) => {
-      setUser(next);
-      setAuthReady(true);
-    });
+    let unsub = () => {};
+    let cancelled = false;
+
+    void (async () => {
+      // Sempre começa deslogado ao abrir /suporte (Angel Guide, site público, F5, etc.).
+      // Sessão Firebase persistida não deve pular a tela de login.
+      try {
+        await signOutCustomer();
+        clearCustomerSupportLeaveMark();
+      } catch {
+        /* ignore */
+      }
+      if (cancelled) return;
+      unsub = watchCustomerAuth((next) => {
+        setUser(next);
+        setAuthReady(true);
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+      unsub();
+    };
+  }, []);
+
+  // Sai da sessão do cliente ao deixar /suporte (link, voltar, fechar/atualizar aba).
+  useEffect(() => {
+    const aliveKey = "ga_support_chat_alive";
+    sessionStorage.setItem(aliveKey, "1");
+
+    const leaveSupport = () => {
+      markCustomerSupportLeft();
+      void signOutCustomer();
+    };
+
+    const onClickCapture = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const anchor = target.closest("a");
+      if (!anchor) return;
+      const href = anchor.getAttribute("href");
+      if (!href || href.startsWith("#")) return;
+      try {
+        const url = new URL(href, window.location.href);
+        if (url.origin !== window.location.origin) {
+          leaveSupport();
+          return;
+        }
+        const path = url.pathname.replace(/\/+$/, "") || "/";
+        if (!path.startsWith("/suporte")) {
+          leaveSupport();
+        }
+      } catch {
+        /* ignore invalid href */
+      }
+    };
+
+    window.addEventListener("pagehide", leaveSupport);
+    document.addEventListener("click", onClickCapture, true);
+
+    return () => {
+      window.removeEventListener("pagehide", leaveSupport);
+      document.removeEventListener("click", onClickCapture, true);
+      sessionStorage.removeItem(aliveKey);
+      markCustomerSupportLeft();
+      // Atraso curto: evita logout fantasma no remount do React Strict Mode (dev).
+      window.setTimeout(() => {
+        if (sessionStorage.getItem(aliveKey) === "1") {
+          clearCustomerSupportLeaveMark();
+          return;
+        }
+        void signOutCustomer();
+      }, 80);
+    };
   }, []);
 
   useEffect(() => {
@@ -114,6 +186,7 @@ export function SupportChatApp() {
     setError(null);
     setBusy(true);
     try {
+      clearCustomerSupportLeaveMark();
       await signInCustomerEmail(email, password);
     } catch (err) {
       setError(mapAuthError(err));
@@ -138,6 +211,7 @@ export function SupportChatApp() {
   }
 
   async function onLogout() {
+    clearCustomerSupportLeaveMark();
     await signOutCustomer();
     setThreadReady(false);
     setMessages([]);
