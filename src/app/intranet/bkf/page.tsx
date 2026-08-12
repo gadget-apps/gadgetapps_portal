@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState } from "react";
+import { LiveQueuePriorityBadges } from "@/components/bkf/LiveQueuePriorityBadges";
 import { CATALOG_APPS, statusLabel } from "@/data/apps";
 import { clearBkfSession, ensureBkfSession } from "@/lib/bkf/operators";
 import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
@@ -44,14 +45,25 @@ export default function BkfCatalogPage() {
       <div className="bkf__main">
         <header className="bkf__top">
           <div>
-            <Link href="/intranet/" className="bkf__back" style={{ color: "#6b7280" }}>
+            <Link
+              href="/intranet/"
+              className="bkf__back"
+              style={{ color: "#6b7280" }}
+            >
               ← Intranet
             </Link>
             <h1 className="bkf__title" style={{ marginTop: "0.35rem" }}>
               Backoffice (BKF)
             </h1>
-            <p style={{ margin: "0.35rem 0 0", color: "#6b7280", fontSize: "0.9rem" }}>
-              Escolha o app para operar. Os dados de cada produto ficam isolados.
+            <p
+              style={{
+                margin: "0.35rem 0 0",
+                color: "#6b7280",
+                fontSize: "0.9rem",
+              }}
+            >
+              Escolha o app para operar. Os dados de cada produto ficam
+              isolados.
             </p>
           </div>
         </header>
@@ -60,8 +72,17 @@ export default function BkfCatalogPage() {
             {CATALOG_APPS.map((app) => {
               const canOpen = app.status === "active";
               const body = (
-                <div className="bkf-card" style={{ opacity: canOpen ? 1 : 0.55 }}>
-                  <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+                <div
+                  className="bkf-card"
+                  style={{ opacity: canOpen ? 1 : 0.55 }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "0.75rem",
+                      alignItems: "center",
+                    }}
+                  >
                     {app.appId === "angels_care" ? (
                       <Image
                         src="/brand/angels_icon.png"
@@ -83,6 +104,21 @@ export default function BkfCatalogPage() {
                     </div>
                   </div>
                   <p style={{ marginTop: "0.75rem" }}>{app.description}</p>
+                  {canOpen ? (
+                    <div style={{ marginTop: "0.85rem" }}>
+                      <p
+                        style={{
+                          margin: "0 0 0.4rem",
+                          fontSize: "0.75rem",
+                          color: "#6b7280",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Fila pendente
+                      </p>
+                      <LiveQueuePriorityBadges appId={app.appId} compact />
+                    </div>
+                  ) : null}
                   <p
                     className="bkf-mono"
                     style={{ marginTop: "0.75rem", whiteSpace: "normal" }}
