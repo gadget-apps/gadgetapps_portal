@@ -110,7 +110,10 @@ export function BkfShell({ app, children }: Props) {
           </Link>
           {BKF_MODULES.map((mod) => {
             const href = `${base}/${mod.id}/`;
-            const active = pathname.includes(`/${mod.id}`);
+            const active =
+              pathname === href ||
+              pathname === href.slice(0, -1) ||
+              pathname.startsWith(`${base}/${mod.id}/`);
             return (
               <Link
                 key={mod.id}

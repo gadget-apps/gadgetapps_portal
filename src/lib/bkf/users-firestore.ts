@@ -2,13 +2,17 @@ import {
   collection,
   doc,
   deleteField,
-  onSnapshot,
+  getDocs,
+  limit,
+  orderBy,
+  query,
   serverTimestamp,
   updateDoc,
-  type Unsubscribe,
 } from "firebase/firestore";
 import { getAngelsCareAuth, getAngelsCareDb } from "@/lib/firebase/angels-care";
 import type { BkfUser } from "@/data/bkf/mock-users";
+
+const PAGE_SIZE = 80;
 
 function tsToIso(value: unknown): string {
   if (
@@ -81,21 +85,29 @@ export function mapUserDoc(
   };
 }
 
-export function watchAppUsers(
-  onChange: (users: BkfUser[]) => void,
-  onError?: (e: Error) => void,
-): Unsubscribe {
-  return onSnapshot(
-    collection(getAngelsCareDb(), "users"),
-    (snap) => {
-      const list = snap.docs.map((d) =>
-        mapUserDoc(d.id, d.data() as Record<string, unknown>),
-      );
-      list.sort((a, b) => a.displayName.localeCompare(b.displayName, "pt-BR"));
-      onChange(list);
-    },
-    (err) => onError?.(err),
-  );
+/**
+ * Carrega usuários em lote (sem listener pesado na coleção inteira).
+ * Sem índice: fallback para get sem orderBy.
+ */
+export async function loadAppUsers(): Promise<BkfUser[]> {
+  const db = getAngelsCareDb();
+  const col = collection(db, "users");
+
+  try {
+    const snap = await getDocs(
+      query(col, orderBy("name"), limit(PAGE_SIZE)),
+    );
+    return snap.docs.map((d) =>
+      mapUserDoc(d.id, d.data() as Record<string, unknown>),
+    );
+  } catch {
+    const snap = await getDocs(query(col, limit(PAGE_SIZE)));
+    const list = snap.docs.map((d) =>
+      mapUserDoc(d.id, d.data() as Record<string, unknown>),
+    );
+    list.sort((a, b) => a.displayName.localeCompare(b.displayName, "pt-BR"));
+    return list;
+  }
 }
 
 export async function setUserDisabledByAdmin(

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import type { BkfUser } from "@/data/bkf/mock-users";
 import {
+  loadAppUsers,
   setUserDisabledByAdmin,
-  watchAppUsers,
 } from "@/lib/bkf/users-firestore";
 
 type Props = { appId: string };
@@ -19,6 +19,7 @@ export function UsersModule({ appId }: Props) {
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     if (appId !== "angels_care") {
@@ -26,19 +27,30 @@ export function UsersModule({ appId }: Props) {
       setReady(true);
       return;
     }
+
+    let cancelled = false;
     setReady(false);
-    const unsub = watchAppUsers(
-      (list) => {
-        setRows(list);
+    setError(null);
+
+    void loadAppUsers()
+      .then((list) => {
+        if (cancelled) return;
+        startTransition(() => {
+          setRows(list);
+          setReady(true);
+        });
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
         setReady(true);
-        setError(null);
-      },
-      (err) => {
-        setReady(true);
-        setError(err.message || "Falha ao carregar usuários.");
-      },
-    );
-    return () => unsub();
+        setError(
+          err instanceof Error ? err.message : "Falha ao carregar usuários.",
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [appId]);
 
   const filtered = useMemo(() => {
@@ -70,6 +82,11 @@ export function UsersModule({ appId }: Props) {
     setError(null);
     try {
       await setUserDisabledByAdmin(user.id, next);
+      setRows((prev) =>
+        prev.map((u) =>
+          u.id === user.id ? { ...u, accountDisabled: next } : u,
+        ),
+      );
       setNote(
         next
           ? `${user.displayName} desativado no Firebase.`
@@ -80,14 +97,6 @@ export function UsersModule({ appId }: Props) {
     } finally {
       setBusyId(null);
     }
-  }
-
-  if (!ready) {
-    return (
-      <div className="bkf-panel">
-        <p className="bkf-empty">Carregando usuários…</p>
-      </div>
-    );
   }
 
   if (appId !== "angels_care") {
@@ -104,11 +113,13 @@ export function UsersModule({ appId }: Props) {
         <div>
           <h2 className="bkf-panel__title">Usuários</h2>
           <p className="bkf-panel__sub">
-            Lista ao vivo do Firebase Angel&apos;s Care. Ativar/desativar grava
-            na conta (bloqueia login se desativado pelo BKF).
+            Contas do Angel&apos;s Care (até 80 por carga). Ativar/desativar
+            bloqueia o login quando desativado pelo BKF.
           </p>
         </div>
-        <p className="bkf-panel__count">{filtered.length} exibidos</p>
+        <p className="bkf-panel__count">
+          {ready ? `${filtered.length} exibidos` : "carregando…"}
+        </p>
       </div>
 
       <div className="bkf-toolbar">
@@ -146,75 +157,82 @@ export function UsersModule({ appId }: Props) {
       ) : null}
       {note ? <p className="bkf-toast">{note}</p> : null}
 
-      <div className="bkf-table-wrap">
-        <table className="bkf-table">
-          <thead>
-            <tr>
-              <th>Usuário</th>
-              <th>Papel</th>
-              <th>Premium</th>
-              <th>Status</th>
-              <th>Último acesso</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((u) => (
-              <tr key={u.id} className={u.accountDisabled ? "is-disabled" : ""}>
-                <td>
-                  <div className="bkf-user">
-                    <strong>{u.displayName}</strong>
-                    <span>{u.email}</span>
-                  </div>
-                </td>
-                <td>{u.userRole}</td>
-                <td>
-                  {u.isPremium ? (
-                    <span className="bkf-tag bkf-tag--ok">
-                      Sim{u.premiumUntil ? ` · até ${u.premiumUntil}` : ""}
-                    </span>
-                  ) : (
-                    <span className="bkf-tag">Não</span>
-                  )}
-                </td>
-                <td>
-                  {u.accountDisabled ? (
-                    <span className="bkf-tag bkf-tag--bad">Desativado</span>
-                  ) : (
-                    <span className="bkf-tag bkf-tag--ok">Ativo</span>
-                  )}
-                </td>
-                <td className="bkf-mono">
-                  {u.lastActiveAt
-                    ? new Date(u.lastActiveAt).toLocaleString("pt-BR")
-                    : "—"}
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    className="bkf-action"
-                    disabled={busyId === u.id}
-                    onClick={() => toggleDisabled(u)}
-                  >
-                    {busyId === u.id
-                      ? "…"
-                      : u.accountDisabled
-                        ? "Ativar"
-                        : "Desativar"}
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 ? (
+      {!ready ? (
+        <p className="bkf-empty">Carregando usuários…</p>
+      ) : (
+        <div className="bkf-table-wrap">
+          <table className="bkf-table">
+            <thead>
               <tr>
-                <td colSpan={6}>
-                  <p className="bkf-empty">Nenhum usuário neste filtro.</p>
-                </td>
+                <th>Usuário</th>
+                <th>Papel</th>
+                <th>Premium</th>
+                <th>Status</th>
+                <th>Último acesso</th>
+                <th />
               </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {filtered.map((u) => (
+                <tr
+                  key={u.id}
+                  className={u.accountDisabled ? "is-disabled" : ""}
+                >
+                  <td>
+                    <div className="bkf-user">
+                      <strong>{u.displayName}</strong>
+                      <span>{u.email}</span>
+                    </div>
+                  </td>
+                  <td>{u.userRole}</td>
+                  <td>
+                    {u.isPremium ? (
+                      <span className="bkf-tag bkf-tag--ok">
+                        Sim{u.premiumUntil ? ` · até ${u.premiumUntil}` : ""}
+                      </span>
+                    ) : (
+                      <span className="bkf-tag">Não</span>
+                    )}
+                  </td>
+                  <td>
+                    {u.accountDisabled ? (
+                      <span className="bkf-tag bkf-tag--bad">Desativado</span>
+                    ) : (
+                      <span className="bkf-tag bkf-tag--ok">Ativo</span>
+                    )}
+                  </td>
+                  <td className="bkf-mono">
+                    {u.lastActiveAt
+                      ? new Date(u.lastActiveAt).toLocaleString("pt-BR")
+                      : "—"}
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="bkf-action"
+                      disabled={busyId === u.id}
+                      onClick={() => toggleDisabled(u)}
+                    >
+                      {busyId === u.id
+                        ? "…"
+                        : u.accountDisabled
+                          ? "Ativar"
+                          : "Desativar"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6}>
+                    <p className="bkf-empty">Nenhum usuário neste filtro.</p>
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
