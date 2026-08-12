@@ -12,7 +12,6 @@ import {
   mapAuthError,
   sendCustomerMessage,
   signInCustomerEmail,
-  signInCustomerGoogle,
   signOutCustomer,
   watchCustomerAuth,
   watchCustomerMessages,
@@ -116,18 +115,6 @@ export function SupportChatApp() {
     setBusy(true);
     try {
       await signInCustomerEmail(email, password);
-    } catch (err) {
-      setError(mapAuthError(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onGoogle() {
-    setError(null);
-    setBusy(true);
-    try {
-      await signInCustomerGoogle();
     } catch (err) {
       setError(mapAuthError(err));
     } finally {
@@ -256,19 +243,6 @@ export function SupportChatApp() {
                       {busy ? "Entrando…" : "Entrar"}
                     </button>
                   </form>
-
-                  <div className="support-divider">
-                    <span>ou</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="pill pill-dark support-google"
-                    onClick={onGoogle}
-                    disabled={busy}
-                  >
-                    Continuar com Google
-                  </button>
 
                   {!initialProduct ? (
                     <button

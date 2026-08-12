@@ -12,10 +12,8 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import {
-  GoogleAuthProvider,
   onAuthStateChanged,
   signInWithEmailAndPassword,
-  signInWithPopup,
   signOut,
   type User,
 } from "firebase/auth";
@@ -97,14 +95,6 @@ export async function signInCustomerEmail(
     email.trim().toLowerCase(),
     password,
   );
-  await assertCustomerAllowed(cred.user);
-  return cred.user;
-}
-
-export async function signInCustomerGoogle(): Promise<User> {
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: "select_account" });
-  const cred = await signInWithPopup(getAngelsCareAuth(), provider);
   await assertCustomerAllowed(cred.user);
   return cred.user;
 }
@@ -265,10 +255,6 @@ export function mapAuthError(err: unknown): string {
       return "E-mail ou senha incorretos. Use a mesma conta do app Angel's Care.";
     case "auth/too-many-requests":
       return "Muitas tentativas. Aguarde alguns minutos.";
-    case "auth/popup-closed-by-user":
-      return "Login com Google cancelado.";
-    case "auth/popup-blocked":
-      return "Pop-up bloqueado. Permita pop-ups para este site.";
     case "auth/unauthorized-domain":
       return "Domínio não autorizado no Firebase Authentication.";
     case "auth/network-request-failed":
