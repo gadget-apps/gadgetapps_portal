@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { BkfShell } from "@/components/bkf/BkfShell";
 import { ChatQueueModule } from "@/components/bkf/ChatQueueModule";
+import { ConfigModule } from "@/components/bkf/ConfigModule";
 import { TeamModule } from "@/components/bkf/TeamModule";
 import { UsersModule } from "@/components/bkf/UsersModule";
 import { CATALOG_APPS, getAppById } from "@/data/apps";
@@ -45,6 +46,8 @@ export default async function ModulePage({ params }: Props) {
     body = <TeamModule />;
   } else if (module === "users") {
     body = <UsersModule appId={app.appId} />;
+  } else if (module === "config") {
+    body = <ConfigModule />;
   }
 
   return <BkfShell app={app}>{body}</BkfShell>;
