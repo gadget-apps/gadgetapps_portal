@@ -85,7 +85,7 @@ body {
   border: 0;
 }
 
-/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Header Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Header ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */
 .topbar {
   position: fixed;
   inset: 0 0 auto;
@@ -146,10 +146,22 @@ body {
 
 .brand__logo--footer {
   display: block;
-  height: 3rem;
+  height: 4.25rem;
   width: auto;
-  max-width: 14rem;
+  max-width: min(58vw, 16rem);
   object-fit: contain;
+  flex-shrink: 0;
+}
+
+.footer__brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem 1.1rem;
+}
+
+.footer__brand .footer__meta {
+  margin: 0;
 }
 
 .topbar[data-on="hero"]:not([data-scrolled="true"]) .brand__logo {
@@ -294,7 +306,7 @@ body {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Hero fotogrÃÂ¡fico full-bleed Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Hero fotogrÃÂÃÂ¡fico full-bleed ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */
 .hero {
   position: relative;
   min-height: 100svh;
@@ -370,7 +382,7 @@ body {
   margin-top: 1.75rem;
 }
 
-/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Sections Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Sections ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */
 .section {
   width: min(1120px, calc(100% - 2.5rem));
   margin-inline: auto;
@@ -403,7 +415,7 @@ body {
   line-height: 1.5;
 }
 
-/* Product spotlight Ã¢ÂÂ Apple-style full-bleed panel */
+/* Product spotlight ÃÂ¢ÃÂÃÂ Apple-style full-bleed panel */
 .spotlight {
   margin-top: 3rem;
   border-radius: 1.75rem;
@@ -474,7 +486,7 @@ body {
   opacity: 0.75;
 }
 
-/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ Bento grid (Apple / Linear) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Bento grid (Apple / Linear) ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */
 .bento {
   margin-top: 2.5rem;
   display: grid;
@@ -643,7 +655,7 @@ body {
   .footer__inner {
     flex-direction: row;
     justify-content: space-between;
-    align-items: end;
+    align-items: center;
   }
 }
 
@@ -710,7 +722,7 @@ body {
   }
 }
 
-/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ BKF console Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
+/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ BKF console ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */
 .bkf {
   display: grid;
   min-height: 100svh;

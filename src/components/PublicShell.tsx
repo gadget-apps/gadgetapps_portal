@@ -54,7 +54,7 @@ export function SiteFooter() {
   return (
     <footer className="footer">
       <div className="footer__inner">
-        <div>
+        <div className="footer__brand">
           <Image
             src="/brand/gadget_apps_logo.png"
             alt="Gadget Apps Technology"
@@ -62,7 +62,7 @@ export function SiteFooter() {
             height={369}
             className="brand__logo--footer"
           />
-          <p className="footer__meta" style={{ marginTop: "0.75rem" }}>
+          <p className="footer__meta">
             Produtos digitais · operação ·{" "}
             <Link href="/suporte/" style={{ color: "inherit" }}>
               suporte
