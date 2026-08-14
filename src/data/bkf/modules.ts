@@ -21,19 +21,26 @@ export const BKF_MODULES = [
   {
     id: "premium",
     title: "Premium",
-    description: "Histórico de assinatura.",
+    description: "Status atual e eventos de assinatura.",
     adminOnly: true,
   },
   {
     id: "reports",
     title: "Denúncias",
-    description: "Fila de moderação.",
+    description: "Fila de denúncias originadas no chat do app.",
     adminOnly: true,
   },
   {
     id: "sos",
-    title: "SOS / Functions",
-    description: "Saúde de alertas e backend.",
+    title: "SOS — auditoria",
+    description:
+      "Log de botão SOS e sensor de queda (FCM automático ao contratante e profissionais).",
+    adminOnly: true,
+  },
+  {
+    id: "functions",
+    title: "Cloud Functions",
+    description: "Monitor de falhas e avisos das Functions do backend.",
     adminOnly: true,
   },
   {

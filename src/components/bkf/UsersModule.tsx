@@ -3,13 +3,58 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import type { BkfUser } from "@/data/bkf/mock-users";
 import {
+  getAngelsCareAuth,
+} from "@/lib/firebase/angels-care";
+import { isBootstrapEmail } from "@/lib/bkf/operators";
+import {
+  BKF_PREMIUM_PRODUCTS,
+  addDaysYmd,
+  grantBkfAdminPremium,
+  revokeBkfAdminPremium,
+  todayYmd,
+  type BkfPremiumKind,
+} from "@/lib/bkf/premium-admin";
+import {
   loadAppUsers,
   setUserDisabledByAdmin,
 } from "@/lib/bkf/users-firestore";
+import { usersMetricsFromRows } from "@/lib/bkf/dashboard-metrics";
+import { KpiStrip } from "@/components/bkf/KpiStrip";
 
 type Props = { appId: string };
 
 type Filter = "all" | "active" | "disabled" | "premium";
+
+type PremiumForm = {
+  productId: string;
+  startDate: string;
+  endDate: string;
+  kind: BkfPremiumKind;
+  reason: string;
+};
+
+function defaultForm(user: BkfUser): PremiumForm {
+  const productId =
+    user.premiumProductId &&
+    BKF_PREMIUM_PRODUCTS.some((p) => p.productId === user.premiumProductId)
+      ? user.premiumProductId
+      : BKF_PREMIUM_PRODUCTS[0].productId;
+  const start = todayYmd();
+  const product =
+    BKF_PREMIUM_PRODUCTS.find((p) => p.productId === productId) ??
+    BKF_PREMIUM_PRODUCTS[0];
+  const endFromUser =
+    user.premiumUntil && user.premiumUntil >= start
+      ? user.premiumUntil
+      : addDaysYmd(start, product.accessDays);
+  return {
+    productId,
+    startDate: start,
+    endDate: endFromUser,
+    kind: "support",
+    reason: "",
+  };
+}
 
 export function UsersModule({ appId }: Props) {
   const [rows, setRows] = useState<BkfUser[]>([]);
@@ -19,7 +64,16 @@ export function UsersModule({ appId }: Props) {
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [premiumUser, setPremiumUser] = useState<BkfUser | null>(null);
+  const [form, setForm] = useState<PremiumForm | null>(null);
+  const [premiumBusy, setPremiumBusy] = useState(false);
+  const [premiumError, setPremiumError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    setIsAdmin(isBootstrapEmail(getAngelsCareAuth().currentUser?.email));
+  }, []);
 
   useEffect(() => {
     if (appId !== "angels_care") {
@@ -68,6 +122,187 @@ export function UsersModule({ appId }: Props) {
     });
   }, [rows, q, filter]);
 
+  const userKpis = useMemo(() => usersMetricsFromRows(rows), [rows]);
+
+  function openPremium(user: BkfUser) {
+    setPremiumError(null);
+    setPremiumUser(user);
+    setForm(defaultForm(user));
+  }
+
+  function closePremium() {
+    if (premiumBusy) return;
+    setPremiumUser(null);
+    setForm(null);
+    setPremiumError(null);
+  }
+
+  function onProductChange(productId: string) {
+    setForm((prev) => {
+      if (!prev) return prev;
+      const product =
+        BKF_PREMIUM_PRODUCTS.find((p) => p.productId === productId) ??
+        BKF_PREMIUM_PRODUCTS[0];
+      return {
+        ...prev,
+        productId,
+        endDate: addDaysYmd(prev.startDate, product.accessDays),
+      };
+    });
+  }
+
+  function onStartChange(startDate: string) {
+    setForm((prev) => {
+      if (!prev) return prev;
+      const product =
+        BKF_PREMIUM_PRODUCTS.find((p) => p.productId === prev.productId) ??
+        BKF_PREMIUM_PRODUCTS[0];
+      return {
+        ...prev,
+        startDate,
+        endDate: addDaysYmd(startDate, product.accessDays),
+      };
+    });
+  }
+
+  async function submitGrant(forceOverwrite = false) {
+    if (!premiumUser || !form || premiumBusy) return;
+    if (!form.reason.trim() || form.reason.trim().length < 3) {
+      setPremiumError("Informe o motivo (mín. 3 caracteres).");
+      return;
+    }
+    if (form.endDate <= form.startDate) {
+      setPremiumError("A data fim deve ser depois da data início.");
+      return;
+    }
+
+    setPremiumBusy(true);
+    setPremiumError(null);
+    setError(null);
+    try {
+      const result = await grantBkfAdminPremium({
+        targetUserId: premiumUser.id,
+        productId: form.productId,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        reason: form.reason.trim(),
+        kind: form.kind,
+        forceOverwrite,
+      });
+
+      if (!result.success && result.reason === "active_play_entitlement") {
+        const ok = window.confirm(
+          "Este usuário tem Premium ativo via Google Play. Sobrescrever com o plano do BKF?",
+        );
+        if (ok) {
+          setPremiumBusy(false);
+          await submitGrant(true);
+          return;
+        }
+        setPremiumError("Operação cancelada: entitlement Play ativo.");
+        return;
+      }
+
+      if (!result.success) {
+        setPremiumError(result.reason || "Falha ao conceder Premium.");
+        return;
+      }
+
+      setRows((prev) =>
+        prev.map((u) =>
+          u.id === premiumUser.id
+            ? {
+                ...u,
+                isPremium: true,
+                premiumUntil: form.endDate,
+                premiumProductId: form.productId,
+                premiumPlanType:
+                  BKF_PREMIUM_PRODUCTS.find(
+                    (p) => p.productId === form.productId,
+                  )?.planType,
+                premiumSource:
+                  form.kind === "bonus" ? "bkf_bonus" : "bkf_admin",
+              }
+            : u,
+        ),
+      );
+      setNote(
+        `Premium concedido a ${premiumUser.displayName} até ${form.endDate}.`,
+      );
+      setPremiumUser(null);
+      setForm(null);
+    } catch (e) {
+      setPremiumError(
+        e instanceof Error ? e.message : "Falha ao conceder Premium.",
+      );
+    } finally {
+      setPremiumBusy(false);
+    }
+  }
+
+  async function submitRevoke(forceOverwrite = false) {
+    if (!premiumUser || !form || premiumBusy) return;
+    if (!form.reason.trim() || form.reason.trim().length < 3) {
+      setPremiumError("Informe o motivo da revogação (mín. 3 caracteres).");
+      return;
+    }
+    const ok = window.confirm(
+      `Revogar Premium de ${premiumUser.displayName}?`,
+    );
+    if (!ok) return;
+
+    setPremiumBusy(true);
+    setPremiumError(null);
+    setError(null);
+    try {
+      const result = await revokeBkfAdminPremium({
+        targetUserId: premiumUser.id,
+        reason: form.reason.trim(),
+        kind: form.kind,
+        forceOverwrite,
+      });
+
+      if (!result.success && result.reason === "active_play_entitlement") {
+        const overwrite = window.confirm(
+          "Premium ativo via Google Play. Revogar mesmo assim?",
+        );
+        if (overwrite) {
+          setPremiumBusy(false);
+          await submitRevoke(true);
+          return;
+        }
+        setPremiumError("Operação cancelada: entitlement Play ativo.");
+        return;
+      }
+
+      if (!result.success) {
+        setPremiumError(result.reason || "Falha ao revogar Premium.");
+        return;
+      }
+
+      setRows((prev) =>
+        prev.map((u) =>
+          u.id === premiumUser.id
+            ? {
+                ...u,
+                isPremium: false,
+                premiumUntil: undefined,
+              }
+            : u,
+        ),
+      );
+      setNote(`Premium revogado de ${premiumUser.displayName}.`);
+      setPremiumUser(null);
+      setForm(null);
+    } catch (e) {
+      setPremiumError(
+        e instanceof Error ? e.message : "Falha ao revogar Premium.",
+      );
+    } finally {
+      setPremiumBusy(false);
+    }
+  }
+
   async function toggleDisabled(user: BkfUser) {
     if (busyId) return;
     const next = !user.accountDisabled;
@@ -114,13 +349,30 @@ export function UsersModule({ appId }: Props) {
           <h2 className="bkf-panel__title">Usuários</h2>
           <p className="bkf-panel__sub">
             Contas do Angel&apos;s Care (até 80 por carga). Ativar/desativar
-            bloqueia o login quando desativado pelo BKF.
+            conta bloqueia o login. Admin pode conceder ou revogar Premium com
+            plano e vigência.
           </p>
         </div>
         <p className="bkf-panel__count">
           {ready ? `${filtered.length} exibidos` : "carregando…"}
         </p>
       </div>
+
+      {isAdmin ? (
+        <KpiStrip
+          loading={!ready}
+          items={[
+            { label: "Na amostra", value: userKpis.total },
+            { label: "Ativos", value: userKpis.active, tone: "ok" },
+            {
+              label: "Desativados",
+              value: userKpis.disabled,
+              tone: userKpis.disabled > 0 ? "warn" : "default",
+            },
+            { label: "Premium", value: userKpis.premium, tone: "ok" },
+          ]}
+        />
+      ) : null}
 
       <div className="bkf-toolbar">
         <input
@@ -207,18 +459,30 @@ export function UsersModule({ appId }: Props) {
                       : "—"}
                   </td>
                   <td>
-                    <button
-                      type="button"
-                      className="bkf-action"
-                      disabled={busyId === u.id}
-                      onClick={() => toggleDisabled(u)}
-                    >
-                      {busyId === u.id
-                        ? "…"
-                        : u.accountDisabled
-                          ? "Ativar"
-                          : "Desativar"}
-                    </button>
+                    <div className="bkf-row-actions">
+                      {isAdmin ? (
+                        <button
+                          type="button"
+                          className="bkf-action"
+                          disabled={busyId === u.id || premiumBusy}
+                          onClick={() => openPremium(u)}
+                        >
+                          Premium
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="bkf-action"
+                        disabled={busyId === u.id}
+                        onClick={() => toggleDisabled(u)}
+                      >
+                        {busyId === u.id
+                          ? "…"
+                          : u.accountDisabled
+                            ? "Ativar"
+                            : "Desativar"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -233,6 +497,143 @@ export function UsersModule({ appId }: Props) {
           </table>
         </div>
       )}
+
+      {premiumUser && form ? (
+        <div className="bkf-modal" role="dialog" aria-modal="true">
+          <button
+            type="button"
+            className="bkf-modal__backdrop"
+            aria-label="Fechar"
+            onClick={closePremium}
+          />
+          <div className="bkf-modal__card">
+            <div className="bkf-modal__head">
+              <div>
+                <h3 className="bkf-modal__title">Premium — {premiumUser.displayName}</h3>
+                <p className="bkf-modal__sub">{premiumUser.email || premiumUser.id}</p>
+              </div>
+              <button
+                type="button"
+                className="bkf-action"
+                onClick={closePremium}
+                disabled={premiumBusy}
+              >
+                Fechar
+              </button>
+            </div>
+
+            <label className="bkf-field">
+              <span>Plano</span>
+              <select
+                className="bkf-input"
+                value={form.productId}
+                disabled={premiumBusy}
+                onChange={(e) => onProductChange(e.target.value)}
+              >
+                {BKF_PREMIUM_PRODUCTS.map((p) => (
+                  <option key={p.productId} value={p.productId}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="bkf-field-row">
+              <label className="bkf-field">
+                <span>Início</span>
+                <input
+                  className="bkf-input"
+                  type="date"
+                  value={form.startDate}
+                  disabled={premiumBusy}
+                  onChange={(e) => onStartChange(e.target.value)}
+                />
+              </label>
+              <label className="bkf-field">
+                <span>Fim</span>
+                <input
+                  className="bkf-input"
+                  type="date"
+                  value={form.endDate}
+                  disabled={premiumBusy}
+                  onChange={(e) =>
+                    setForm((prev) =>
+                      prev ? { ...prev, endDate: e.target.value } : prev,
+                    )
+                  }
+                />
+              </label>
+            </div>
+
+            <label className="bkf-field">
+              <span>Tipo</span>
+              <select
+                className="bkf-input"
+                value={form.kind}
+                disabled={premiumBusy}
+                onChange={(e) =>
+                  setForm((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          kind: e.target.value as BkfPremiumKind,
+                        }
+                      : prev,
+                  )
+                }
+              >
+                <option value="support">Correção / suporte</option>
+                <option value="bonus">Bonificação</option>
+              </select>
+            </label>
+
+            <label className="bkf-field">
+              <span>Motivo</span>
+              <textarea
+                className="bkf-input bkf-textarea"
+                rows={3}
+                placeholder="Ex.: compra Play não efetivada; cortesia de 15 dias…"
+                value={form.reason}
+                disabled={premiumBusy}
+                onChange={(e) =>
+                  setForm((prev) =>
+                    prev ? { ...prev, reason: e.target.value } : prev,
+                  )
+                }
+              />
+            </label>
+
+            {premiumError ? (
+              <p className="bkf-toast" style={{ color: "#b00020" }}>
+                {premiumError}
+              </p>
+            ) : null}
+
+            <div className="bkf-modal__actions">
+              {premiumUser.isPremium ? (
+                <button
+                  type="button"
+                  className="bkf-action bkf-action--danger"
+                  disabled={premiumBusy}
+                  onClick={() => void submitRevoke()}
+                >
+                  {premiumBusy ? "…" : "Revogar Premium"}
+                </button>
+              ) : (
+                <span />
+              )}
+              <button
+                type="button"
+                className="bkf-action bkf-action--primary"
+                disabled={premiumBusy}
+                onClick={() => void submitGrant()}
+              >
+                {premiumBusy ? "…" : "Conceder / ajustar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

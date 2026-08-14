@@ -10,22 +10,24 @@ export default function HomePage() {
 
   return (
     <>
-      <section className="hero">
-        <div className="hero__media">
+      <section className="hero hero--noir">
+        <div className="hero__backdrop" aria-hidden>
+          <span className="hero__grain" />
+        </div>
+        <SiteHeader on="hero" />
+        <div className="hero__brand-stage">
+          <h1 className="sr-only">Gadget Apps Technology</h1>
           <Image
-            src="/hero.jpg"
-            alt=""
-            fill
+            src="/brand/gadget_apps_logo.png"
+            alt="Gadget Apps Technology"
+            width={676}
+            height={369}
+            className="hero__brand-logo"
             priority
-            sizes="100vw"
-            quality={85}
           />
         </div>
-        <div className="hero__shade" aria-hidden />
-        <SiteHeader on="hero" />
         <div className="hero__body">
           <div>
-            <h1 className="sr-only">Gadget Apps Technology</h1>
             <p className="hero__copy rise">
               Produtos digitais com operação séria. Entre no site oficial de
               cada app ou na área da equipe.
@@ -64,7 +66,13 @@ export default function HomePage() {
                     height={160}
                     className="spotlight__logo"
                   />
-                  <p className="spotlight__tag">{angels.tagline}</p>
+                  <p className="spotlight__tag">
+                    Garantindo o cuidado de quem{" "}
+                    <span className="spotlight__tag-accent">
+                      sempre cuidou de você
+                    </span>
+                  </p>
+                  <p className="spotlight__support">{angels.description}</p>
                   <div className="spotlight__actions">
                     <a
                       href={angels.officialSiteUrl}
@@ -115,8 +123,8 @@ export default function HomePage() {
             <p className="section__eyebrow">Plataforma</p>
             <h2 className="section__title">Tudo em um só lugar</h2>
             <p className="section__lead">
-              Produtos, operação e intranet — com a identidade visual oficial
-              da Gadget Apps e do Angel&apos;s Care.
+              Um portal para apresentar, operar e atender — produtos, intranet e
+              suporte no mesmo lugar.
             </p>
           </Reveal>
 
@@ -137,17 +145,17 @@ export default function HomePage() {
                 </div>
                 <div className="bento__overlay" aria-hidden />
                 <div className="bento__body">
-                  <Image
-                    src="/brand/angels_icon.png"
-                    alt=""
-                    width={72}
-                    height={72}
-                    className="bento__mark"
-                  />
                   <p className="bento__kicker">Produto em destaque</p>
-                  <h3 className="bento__title">Angel&apos;s Care</h3>
-                  <p className="bento__text">
-                    Cuidado conectado — site oficial e app na Play Store.
+                  <Image
+                    src="/brand/angels_logo.png"
+                    alt="Angel's Care"
+                    width={420}
+                    height={160}
+                    className="bento__feature-logo"
+                  />
+                  <p className="bento__feature-tag">
+                    Garantindo o cuidado de quem{" "}
+                    <span>sempre cuidou de você</span>
                   </p>
                   <span className="bento__cta">Abrir produto →</span>
                 </div>
@@ -162,7 +170,8 @@ export default function HomePage() {
                   className="bento__mark--lg"
                 />
                 <p className="bento__text">
-                  Empresa por trás dos produtos — portal, intranet e operação.
+                  Tecnologia com operação séria. Produtos digitais feitos para
+                  o mundo real.
                 </p>
               </div>
 
@@ -177,22 +186,27 @@ export default function HomePage() {
                 <span className="bento__cta">Entrar →</span>
               </Link>
 
-              <Link href="/intranet/bkf/" className="bento__cell bento__cell--wide bento__cell--span2">
-                <div>
+              <Link
+                href="/intranet/bkf/"
+                className="bento__cell bento__cell--wide bento__cell--span2 bento__cell--bkf"
+              >
+                <div className="bento__bkf-grid">
                   <Image
-                    src="/brand/angels_icon.png"
-                    alt=""
-                    width={48}
-                    height={48}
-                    className="bento__mark"
+                    src="/brand/angels_logo.png"
+                    alt="Angel's Care"
+                    width={420}
+                    height={160}
+                    className="bento__bkf-logo"
                   />
-                  <p className="bento__kicker">Operação</p>
-                  <h3 className="bento__title">Backoffice (BKF)</h3>
-                  <p className="bento__text">
-                    Multi-app: usuários, Premium, denúncias, chat e config.
-                  </p>
+                  <div className="bento__bkf-copy">
+                    <p className="bento__kicker">Operação</p>
+                    <h3 className="bento__title">Backoffice (BKF)</h3>
+                    <p className="bento__text">
+                      Multi-app: usuários, Premium, denúncias, chat e config.
+                    </p>
+                  </div>
+                  <span className="bento__cta">Abrir BKF →</span>
                 </div>
-                <span className="bento__cta">Abrir BKF →</span>
               </Link>
 
               <div className="bento__cell">
@@ -217,24 +231,6 @@ export default function HomePage() {
               </Link>
             </div>
           </Reveal>
-        </section>
-
-        <section className="team-band">
-          <div className="section">
-            <Reveal>
-              <p className="section__eyebrow">Equipe</p>
-              <h2 className="section__title">Intranet</h2>
-              <p className="section__lead">
-                Intranet com Backoffice (BKF) e espaço para novos módulos
-                internos.
-              </p>
-              <div style={{ marginTop: "1.5rem" }}>
-                <Link href="/login/" className="pill pill-blue">
-                  Entrar
-                </Link>
-              </div>
-            </Reveal>
-          </div>
         </section>
       </main>
 

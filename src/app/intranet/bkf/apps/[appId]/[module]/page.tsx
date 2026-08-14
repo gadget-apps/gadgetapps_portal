@@ -3,6 +3,10 @@ import { BkfShell } from "@/components/bkf/BkfShell";
 import { ChatQueueModule } from "@/components/bkf/ChatQueueModule";
 import { ConfigModule } from "@/components/bkf/ConfigModule";
 import { TeamModule } from "@/components/bkf/TeamModule";
+import { PremiumModule } from "@/components/bkf/PremiumModule";
+import { ReportsModule } from "@/components/bkf/ReportsModule";
+import { SosModule } from "@/components/bkf/SosModule";
+import { FunctionsModule } from "@/components/bkf/FunctionsModule";
 import { UsersModule } from "@/components/bkf/UsersModule";
 import { CATALOG_APPS, getAppById } from "@/data/apps";
 import { BKF_MODULES, isBkfModule } from "@/data/bkf/modules";
@@ -46,6 +50,14 @@ export default async function ModulePage({ params }: Props) {
     body = <TeamModule />;
   } else if (module === "users") {
     body = <UsersModule appId={app.appId} />;
+  } else if (module === "premium") {
+    body = <PremiumModule appId={app.appId} />;
+  } else if (module === "reports") {
+    body = <ReportsModule appId={app.appId} />;
+  } else if (module === "sos") {
+    body = <SosModule appId={app.appId} />;
+  } else if (module === "functions") {
+    body = <FunctionsModule appId={app.appId} />;
   } else if (module === "config") {
     body = <ConfigModule />;
   }

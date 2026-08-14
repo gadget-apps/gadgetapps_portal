@@ -10,6 +10,9 @@ export type BkfUser = {
   userRole: "Contratante" | "Cuidador (Profissional)" | "Assistido";
   isPremium: boolean;
   premiumUntil?: string;
+  premiumProductId?: string;
+  premiumPlanType?: string;
+  premiumSource?: string;
   accountDisabled: boolean;
   lastActiveAt: string;
   createdAt: string;

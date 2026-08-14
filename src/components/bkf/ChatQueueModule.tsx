@@ -26,6 +26,10 @@ import {
   watchSupportThreads,
   watchThreadMessages,
 } from "@/lib/bkf/support-firestore";
+import { chatMetricsFromTickets } from "@/lib/bkf/dashboard-metrics";
+import { isBootstrapEmail } from "@/lib/bkf/operators";
+import { KpiStrip } from "@/components/bkf/KpiStrip";
+import { DashBarChart } from "@/components/bkf/DashBarChart";
 
 type Props = {
   appId: string;
@@ -50,6 +54,7 @@ export function ChatQueueModule({ appId }: Props) {
   const [operatorName, setOperatorName] = useState("");
   const [nameDraft, setNameDraft] = useState("");
   const [nameReady, setNameReady] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const messagesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,6 +71,7 @@ export function ChatQueueModule({ appId }: Props) {
     const unsub = onAuthStateChanged(getAngelsCareAuth(), (user) => {
       if (!user?.uid) return;
       if (user.email) setOperatorEmail(user.email);
+      setIsAdmin(isBootstrapEmail(user.email));
       void getOperatorProfile(user.uid).then((profile) => {
         if (!profile) {
           setOperatorName("");
@@ -175,6 +181,8 @@ export function ChatQueueModule({ appId }: Props) {
       unread: tickets.reduce((n, t) => n + t.unreadForStaff, 0),
     };
   }, [tickets]);
+
+  const chatDash = useMemo(() => chatMetricsFromTickets(tickets), [tickets]);
 
   async function selectTicket(id: string) {
     setSelectedId(id);
@@ -318,6 +326,37 @@ export function ChatQueueModule({ appId }: Props) {
             </p>
           </div>
         </div>
+
+        {isAdmin ? (
+          <div className="chatq__admin-dash">
+            <KpiStrip
+              items={[
+                {
+                  label: "Pendentes",
+                  value: chatDash.pending,
+                  tone: chatDash.pending > 0 ? "warn" : "ok",
+                },
+                { label: "Abertos", value: chatDash.open },
+                { label: "Aguardando", value: chatDash.pendingStatus },
+                { label: "Em atendimento", value: chatDash.assigned },
+                {
+                  label: "Não lidas",
+                  value: chatDash.unread,
+                  tone: chatDash.unread > 0 ? "bad" : "default",
+                },
+              ]}
+            />
+            <DashBarChart
+              title="Prioridade (pendentes)"
+              items={[
+                { label: "Normal", value: chatDash.normal },
+                { label: "Alta", value: chatDash.high },
+                { label: "Urgente", value: chatDash.urgent },
+              ]}
+              emptyLabel="Nenhum pendente"
+            />
+          </div>
+        ) : null}
 
         {error ? (
           <p className="bkf-empty" style={{ color: "#b00020", marginBottom: "0.75rem" }}>

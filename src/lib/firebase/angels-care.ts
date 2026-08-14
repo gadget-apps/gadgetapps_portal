@@ -1,6 +1,7 @@
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
+import { getFunctions, type Functions } from "firebase/functions";
 
 /** Config WEB atual do projeto app-angelscare (app: GadgetApps BKF Portal). */
 const angelsCareFirebaseConfig = {
@@ -16,6 +17,7 @@ const angelsCareFirebaseConfig = {
 let app: FirebaseApp | undefined;
 let auth: Auth | undefined;
 let db: Firestore | undefined;
+let functions: Functions | undefined;
 
 export function getAngelsCareApp(): FirebaseApp {
   if (!app) {
@@ -34,4 +36,11 @@ export function getAngelsCareAuth(): Auth {
 export function getAngelsCareDb(): Firestore {
   if (!db) db = getFirestore(getAngelsCareApp());
   return db;
+}
+
+export function getAngelsCareFunctions(): Functions {
+  if (!functions) {
+    functions = getFunctions(getAngelsCareApp(), "us-central1");
+  }
+  return functions;
 }

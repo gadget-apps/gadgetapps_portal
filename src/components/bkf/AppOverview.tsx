@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { CatalogApp } from "@/data/apps";
 import { modulesForRole } from "@/data/bkf/modules";
+import { AdminDashboard } from "@/components/bkf/AdminDashboard";
 import { LiveQueuePriorityBadges } from "@/components/bkf/LiveQueuePriorityBadges";
 import { isBootstrapEmail } from "@/lib/bkf/operators";
 import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
@@ -14,12 +15,27 @@ type Props = {
 
 export function AppOverview({ app }: Props) {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [roleReady, setRoleReady] = useState(false);
 
   useEffect(() => {
     setIsAdmin(isBootstrapEmail(getAngelsCareAuth().currentUser?.email));
+    setRoleReady(true);
   }, []);
 
   const modules = modulesForRole(isAdmin);
+
+  if (!roleReady) {
+    return (
+      <div className="bkf-panel">
+        <p className="bkf-empty">Carregando visão geral…</p>
+      </div>
+    );
+  }
+
+  // Dashboard completo: somente Admin.
+  if (isAdmin) {
+    return <AdminDashboard appId={app.appId} />;
+  }
 
   return (
     <>
@@ -28,9 +44,8 @@ export function AppOverview({ app }: Props) {
           <div>
             <h2 className="bkf-panel__title">Prioridade: atendimento</h2>
             <p className="bkf-panel__sub">
-              {isAdmin
-                ? "Comece pela fila de chat. Usuários, Premium e demais módulos vêm na sequência."
-                : "Sua área de trabalho é o Chat / fila. Defina seu nome de atendimento antes de responder."}
+              Sua área de trabalho é o Chat / fila. Defina seu nome de
+              atendimento antes de responder.
             </p>
             <div style={{ marginTop: "0.75rem" }}>
               <LiveQueuePriorityBadges appId={app.appId} />

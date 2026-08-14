@@ -79,6 +79,13 @@ export function mapUserDoc(
     userRole: mapRole(data.userRole),
     isPremium: isPremiumEffective(data),
     premiumUntil: premiumUntil ? premiumUntil.slice(0, 10) : undefined,
+    premiumProductId: data.premiumProductId
+      ? String(data.premiumProductId)
+      : undefined,
+    premiumPlanType: data.premiumPlanType
+      ? String(data.premiumPlanType)
+      : undefined,
+    premiumSource: data.premiumSource ? String(data.premiumSource) : undefined,
     accountDisabled: disabled,
     lastActiveAt: lastActive,
     createdAt: tsToIso(data.createdAt).slice(0, 10) || "",
