@@ -1,97 +1,97 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { isBootstrapEmail } from "@/lib/bkf/operators";
+import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
 import {
-  clearSeedSupportTickets,
-  seedSupportTickets,
-} from "@/lib/bkf/seed-support";
-import {
-  clearSeedModerationReports,
-  seedModerationReports,
-} from "@/lib/bkf/seed-reports";
+  DEFAULT_FORCE_MESSAGE,
+  loadMobileAppConfig,
+  playStoreUrlFor,
+  saveMobileAppConfig,
+  type MobileAppConfig,
+} from "@/lib/bkf/app-config-firestore";
 
 export function ConfigModule() {
   const [busy, setBusy] = useState(false);
-  const [ticketCount, setTicketCount] = useState(25);
-  const [reportCount, setReportCount] = useState(15);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [configReady, setConfigReady] = useState(false);
+  const [config, setConfig] = useState<MobileAppConfig | null>(null);
+  const [minBuild, setMinBuild] = useState(0);
+  const [message, setMessage] = useState(DEFAULT_FORCE_MESSAGE);
+  const [packageId, setPackageId] = useState("br.com.angelscare.app");
 
-  async function onSeedTickets() {
+  useEffect(() => {
+    setIsAdmin(isBootstrapEmail(getAngelsCareAuth().currentUser?.email));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setConfigReady(false);
+    void loadMobileAppConfig()
+      .then((cfg) => {
+        if (cancelled) return;
+        setConfig(cfg);
+        setMinBuild(cfg.minBuildNumber);
+        setMessage(cfg.message);
+        setPackageId(cfg.androidPackageId);
+        setConfigReady(true);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setConfigReady(true);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Falha ao carregar app_config/mobile.",
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function onSaveForceUpdate(e: FormEvent) {
+    e.preventDefault();
+    if (!isAdmin || busy) return;
     setBusy(true);
     setError(null);
     setMsg(null);
     try {
-      const n = Math.min(60, Math.max(5, Math.floor(ticketCount) || 25));
-      const created = await seedSupportTickets(n);
+      const saved = await saveMobileAppConfig({
+        minBuildNumber: minBuild,
+        message,
+        androidPackageId: packageId,
+        playStoreUrl: playStoreUrlFor(packageId),
+      });
+      setConfig(saved);
+      setMinBuild(saved.minBuildNumber);
+      setMessage(saved.message);
+      setPackageId(saved.androidPackageId);
       setMsg(
-        `${created} tickets de teste criados na fila. Abra Chat / fila para validar performance.`,
+        saved.minBuildNumber > 0
+          ? `Force update ativo: builds abaixo de ${saved.minBuildNumber} serão bloqueados.`
+          : "Force update desligado (minBuildNumber = 0).",
       );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha ao gerar tickets.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onClearTickets() {
-    if (
-      !window.confirm(
-        "Apagar todos os tickets marcados como teste (isSeed)? Conversas reais não são afetadas.",
-      )
-    ) {
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    setMsg(null);
-    try {
-      const removed = await clearSeedSupportTickets();
-      setMsg(`${removed} tickets de teste removidos.`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha ao limpar tickets.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onSeedReports() {
-    setBusy(true);
-    setError(null);
-    setMsg(null);
-    try {
-      const n = Math.min(60, Math.max(5, Math.floor(reportCount) || 15));
-      const created = await seedModerationReports(n);
-      setMsg(
-        `${created} denúncias de teste criadas. Abra Denúncias para validar a fila.`,
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Falha ao salvar force update.",
       );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha ao gerar denúncias.");
     } finally {
       setBusy(false);
     }
   }
 
-  async function onClearReports() {
-    if (
-      !window.confirm(
-        "Apagar todas as denúncias marcadas como teste (isSeed)? Denúncias reais do app não são afetadas.",
-      )
-    ) {
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    setMsg(null);
-    try {
-      const removed = await clearSeedModerationReports();
-      setMsg(`${removed} denúncias de teste removidas.`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha ao limpar denúncias.");
-    } finally {
-      setBusy(false);
-    }
+  if (!isAdmin) {
+    return (
+      <div className="bkf-panel">
+        <p className="bkf-empty">Somente o admin BKF acessa Config técnica.</p>
+      </div>
+    );
   }
+
+  const forceOn = minBuild > 0;
 
   return (
     <div className="bkf-panel">
@@ -99,8 +99,7 @@ export function ConfigModule() {
         <div>
           <h2 className="bkf-panel__title">Config técnica</h2>
           <p className="bkf-panel__sub">
-            Ferramentas internas. Use seeds só para teste de fila, performance e
-            usabilidade — sempre com <code>isSeed: true</code>.
+            Force update do app Android (documento app_config/mobile).
           </p>
         </div>
       </div>
@@ -116,101 +115,114 @@ export function ConfigModule() {
           }}
         >
           <h3 style={{ margin: 0, fontSize: "1rem" }}>
-            Tickets de suporte (teste)
+            Force update (Android)
           </h3>
           <p style={{ margin: 0, color: "#6b7280", fontSize: "0.875rem" }}>
-            Gera conversas falsas em <code>support_threads</code> com{" "}
-            <code>isSeed: true</code>. Não cria usuários reais no app.
+            Se o <strong>build number</strong> instalado (o <code>+N</code> do
+            pubspec) for menor que o mínimo, o app abre a tela de atualização
+            obrigatória. Use <code>0</code> para desligar.
           </p>
 
-          <label
-            style={{ display: "grid", gap: "0.35rem", fontSize: "0.875rem" }}
-          >
-            Quantidade (5–60)
-            <input
-              className="bkf-input"
-              type="number"
-              min={5}
-              max={60}
-              value={ticketCount}
-              disabled={busy}
-              onChange={(e) => setTicketCount(Number(e.target.value))}
-              style={{ maxWidth: "8rem" }}
-            />
-          </label>
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.6rem" }}>
-            <button
-              type="button"
-              className="pill pill-blue"
-              disabled={busy}
-              onClick={onSeedTickets}
+          {!configReady ? (
+            <p className="bkf-empty">Carregando configuração…</p>
+          ) : (
+            <form
+              onSubmit={onSaveForceUpdate}
+              style={{ display: "grid", gap: "0.75rem" }}
             >
-              {busy ? "Aguarde…" : "Gerar tickets de teste"}
-            </button>
-            <button
-              type="button"
-              className="bkf-action"
-              disabled={busy}
-              onClick={onClearTickets}
-            >
-              Limpar tickets de teste
-            </button>
-          </div>
-        </section>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "0.5rem",
+                  alignItems: "center",
+                }}
+              >
+                <span
+                  className={`bkf-tag ${forceOn ? "bkf-tag--bad" : "bkf-tag--ok"}`}
+                >
+                  {forceOn ? "Ativo" : "Desligado"}
+                </span>
+                {config?.exists ? (
+                  <span className="bkf-mono" style={{ fontSize: 12 }}>
+                    {config.updatedByEmail
+                      ? `último: ${config.updatedByEmail}`
+                      : "documento existe"}
+                    {config.updatedAt
+                      ? ` · ${new Date(config.updatedAt).toLocaleString("pt-BR")}`
+                      : ""}
+                  </span>
+                ) : (
+                  <span className="bkf-mono" style={{ fontSize: 12 }}>
+                    ainda não existe — será criado ao salvar
+                  </span>
+                )}
+              </div>
 
-        <section
-          style={{
-            border: "1px solid #e5e7eb",
-            borderRadius: "0.85rem",
-            padding: "1rem",
-            display: "grid",
-            gap: "0.75rem",
-          }}
-        >
-          <h3 style={{ margin: 0, fontSize: "1rem" }}>
-            Denúncias do chat (teste)
-          </h3>
-          <p style={{ margin: 0, color: "#6b7280", fontSize: "0.875rem" }}>
-            Gera denúncias aleatórias em <code>moderation_reports</code> com{" "}
-            <code>isSeed: true</code> (mesmos motivos do app). Não cria usuários
-            reais — só a fila no módulo Denúncias.
-          </p>
+              <label
+                style={{ display: "grid", gap: "0.35rem", fontSize: "0.875rem" }}
+              >
+                Build mínimo obrigatório
+                <input
+                  className="bkf-input"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={minBuild}
+                  disabled={busy}
+                  onChange={(e) => setMinBuild(Number(e.target.value) || 0)}
+                  style={{ maxWidth: "10rem" }}
+                />
+              </label>
 
-          <label
-            style={{ display: "grid", gap: "0.35rem", fontSize: "0.875rem" }}
-          >
-            Quantidade (5–60)
-            <input
-              className="bkf-input"
-              type="number"
-              min={5}
-              max={60}
-              value={reportCount}
-              disabled={busy}
-              onChange={(e) => setReportCount(Number(e.target.value))}
-              style={{ maxWidth: "8rem" }}
-            />
-          </label>
+              <label
+                style={{ display: "grid", gap: "0.35rem", fontSize: "0.875rem" }}
+              >
+                Mensagem na tela de bloqueio
+                <textarea
+                  className="bkf-input"
+                  rows={3}
+                  value={message}
+                  disabled={busy}
+                  onChange={(e) => setMessage(e.target.value)}
+                  style={{ resize: "vertical" }}
+                />
+              </label>
 
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.6rem" }}>
-            <button
-              type="button"
-              className="pill pill-blue"
-              disabled={busy}
-              onClick={onSeedReports}
-            >
-              {busy ? "Aguarde…" : "Gerar denúncias de teste"}
-            </button>
-            <button
-              type="button"
-              className="bkf-action"
-              disabled={busy}
-              onClick={onClearReports}
-            >
-              Limpar denúncias de teste
-            </button>
-          </div>
+              <label
+                style={{ display: "grid", gap: "0.35rem", fontSize: "0.875rem" }}
+              >
+                Package ID Android
+                <input
+                  className="bkf-input"
+                  value={packageId}
+                  disabled={busy}
+                  onChange={(e) => setPackageId(e.target.value)}
+                />
+              </label>
+
+              <p style={{ margin: 0, fontSize: "0.8rem", color: "#6b7280" }}>
+                Play Store:{" "}
+                <a
+                  href={playStoreUrlFor(packageId)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {playStoreUrlFor(packageId)}
+                </a>
+              </p>
+
+              <div>
+                <button
+                  type="submit"
+                  className="pill pill-blue"
+                  disabled={busy || !message.trim()}
+                >
+                  {busy ? "Salvando…" : "Salvar force update"}
+                </button>
+              </div>
+            </form>
+          )}
         </section>
 
         {msg ? (

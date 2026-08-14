@@ -46,7 +46,13 @@ export const BKF_MODULES = [
   {
     id: "config",
     title: "Config técnica",
-    description: "Force update e flags.",
+    description: "Force update do app Android.",
+    adminOnly: true,
+  },
+  {
+    id: "mocks",
+    title: "Mocks",
+    description: "Tickets e denúncias de teste (isSeed).",
     adminOnly: true,
   },
 ] as const;

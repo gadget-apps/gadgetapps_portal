@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { BkfShell } from "@/components/bkf/BkfShell";
 import { ChatQueueModule } from "@/components/bkf/ChatQueueModule";
 import { ConfigModule } from "@/components/bkf/ConfigModule";
+import { MocksModule } from "@/components/bkf/MocksModule";
 import { TeamModule } from "@/components/bkf/TeamModule";
 import { PremiumModule } from "@/components/bkf/PremiumModule";
 import { ReportsModule } from "@/components/bkf/ReportsModule";
@@ -58,6 +59,8 @@ export default async function ModulePage({ params }: Props) {
     body = <SosModule appId={app.appId} />;
   } else if (module === "functions") {
     body = <FunctionsModule appId={app.appId} />;
+  } else if (module === "mocks") {
+    body = <MocksModule />;
   } else if (module === "config") {
     body = <ConfigModule />;
   }
