@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
-import { DashBarChart } from "@/components/bkf/DashBarChart";
+import { DashColumnChart } from "@/components/bkf/DashColumnChart";
+import { DashDonutChart } from "@/components/bkf/DashDonutChart";
+import { DashStackChart } from "@/components/bkf/DashStackChart";
 import { KpiStrip } from "@/components/bkf/KpiStrip";
 import {
   loadAdminDashBundle,
@@ -12,11 +14,6 @@ import {
 type Props = {
   appId: string;
 };
-
-const COMING_SOON = [
-  { id: "config", title: "Config técnica", blurb: "Flags e force update" },
-  { id: "team", title: "Equipe", blurb: "Operadores e convites" },
-] as const;
 
 export function AdminDashboard({ appId }: Props) {
   const [data, setData] = useState<AdminDashBundle | null>(null);
@@ -99,24 +96,94 @@ export function AdminDashboard({ appId }: Props) {
             ]}
           />
           <div className="bkf-dash__charts">
-            <DashBarChart
-              title="Fila por prioridade (pendentes)"
+            <DashColumnChart
+              title="Prioridade (pendentes)"
               items={[
-                { label: "Normal", value: data?.chat.normal ?? 0 },
-                { label: "Alta", value: data?.chat.high ?? 0 },
-                { label: "Urgente", value: data?.chat.urgent ?? 0 },
+                {
+                  label: "Normal",
+                  value: data?.chat.normal ?? 0,
+                  tone: "muted",
+                },
+                {
+                  label: "Alta",
+                  value: data?.chat.high ?? 0,
+                  tone: "warn",
+                },
+                {
+                  label: "Urgente",
+                  value: data?.chat.urgent ?? 0,
+                  tone: "bad",
+                },
               ]}
               emptyLabel={ready ? "Nenhum ticket pendente" : "Carregando…"}
             />
-            <DashBarChart
-              title="Por status"
+            <DashDonutChart
+              title="Status da fila"
               items={[
-                { label: "Aberto", value: data?.chat.open ?? 0 },
-                { label: "Aguardando", value: data?.chat.pendingStatus ?? 0 },
-                { label: "Atribuído", value: data?.chat.assigned ?? 0 },
-                { label: "Resolvido", value: data?.chat.resolved ?? 0 },
+                {
+                  label: "Aberto",
+                  value: data?.chat.open ?? 0,
+                  tone: "info",
+                },
+                {
+                  label: "Aguardando",
+                  value: data?.chat.pendingStatus ?? 0,
+                  tone: "warn",
+                },
+                {
+                  label: "Atribuído",
+                  value: data?.chat.assigned ?? 0,
+                  tone: "ok",
+                },
+                {
+                  label: "Resolvido",
+                  value: data?.chat.resolved ?? 0,
+                  tone: "muted",
+                },
               ]}
               emptyLabel={ready ? "Sem tickets" : "Carregando…"}
+            />
+            <DashDonutChart
+              title="Contas"
+              items={[
+                {
+                  label: "Ativos",
+                  value: data?.users.active ?? 0,
+                  tone: "ok",
+                },
+                {
+                  label: "Desativados",
+                  value: data?.users.disabled ?? 0,
+                  tone: "warn",
+                },
+                {
+                  label: "Premium",
+                  value: data?.users.premium ?? 0,
+                  tone: "info",
+                },
+              ]}
+              emptyLabel={ready ? "Sem usuários" : "Carregando…"}
+            />
+            <DashDonutChart
+              title="Denúncias"
+              items={[
+                {
+                  label: "Abertas",
+                  value: data?.reports.open ?? 0,
+                  tone: "warn",
+                },
+                {
+                  label: "Revisadas",
+                  value: data?.reports.reviewed ?? 0,
+                  tone: "ok",
+                },
+                {
+                  label: "Descartadas",
+                  value: data?.reports.dismissed ?? 0,
+                  tone: "muted",
+                },
+              ]}
+              emptyLabel={ready ? "Sem denúncias" : "Carregando…"}
             />
           </div>
         </div>
@@ -148,15 +215,6 @@ export function AdminDashboard({ appId }: Props) {
                 tone: "ok",
               },
             ]}
-          />
-          <DashBarChart
-            title="Distribuição de contas"
-            items={[
-              { label: "Ativos", value: data?.users.active ?? 0 },
-              { label: "Desativados", value: data?.users.disabled ?? 0 },
-              { label: "Com Premium", value: data?.users.premium ?? 0 },
-            ]}
-            emptyLabel={ready ? "Sem usuários na amostra" : "Carregando…"}
           />
         </div>
       </section>
@@ -191,21 +249,73 @@ export function AdminDashboard({ appId }: Props) {
             ]}
           />
           <div className="bkf-dash__charts">
-            <DashBarChart
-              title="Origem (ativos)"
+            <DashStackChart
+              title="Origem Premium"
               items={(data?.premium.bySource ?? []).map((s) => ({
                 label: s.label,
                 value: s.count,
               }))}
-              emptyLabel={ready ? "Nenhum Premium ativo" : "Carregando…"}
+              emptyLabel={ready ? "Nenhum ativo" : "Carregando…"}
             />
-            <DashBarChart
-              title="Plano (ativos)"
+            <DashColumnChart
+              title="Planos"
               items={(data?.premium.byPlan ?? []).map((p) => ({
                 label: p.label,
                 value: p.count,
               }))}
-              emptyLabel={ready ? "Nenhum Premium ativo" : "Carregando…"}
+              emptyLabel={ready ? "Nenhum ativo" : "Carregando…"}
+            />
+            <DashColumnChart
+              title="SOS"
+              items={[
+                {
+                  label: "Alertas",
+                  value: data?.sos.alerts ?? 0,
+                  tone: "bad",
+                },
+                {
+                  label: "Falsos",
+                  value: data?.sos.falseAlarms ?? 0,
+                  tone: "ok",
+                },
+                {
+                  label: "Suprimidos",
+                  value: data?.sos.suppressed ?? 0,
+                  tone: "warn",
+                },
+                {
+                  label: "Dup.",
+                  value: data?.sos.deduped ?? 0,
+                  tone: "muted",
+                },
+              ]}
+              emptyLabel={ready ? "Sem eventos" : "Carregando…"}
+            />
+            <DashStackChart
+              title="Falhas CF"
+              items={[
+                {
+                  label: "Callable",
+                  value: data?.functionFailures.callable ?? 0,
+                  tone: "info",
+                },
+                {
+                  label: "Agenda",
+                  value: data?.functionFailures.schedule ?? 0,
+                  tone: "warn",
+                },
+                {
+                  label: "Firestore",
+                  value: data?.functionFailures.firestore ?? 0,
+                  tone: "muted",
+                },
+                {
+                  label: "HTTP",
+                  value: data?.functionFailures.https ?? 0,
+                  tone: "ok",
+                },
+              ]}
+              emptyLabel={ready ? "Sem falhas" : "Carregando…"}
             />
           </div>
         </div>
@@ -237,19 +347,6 @@ export function AdminDashboard({ appId }: Props) {
               { label: "Total", value: data?.reports.total ?? 0 },
             ]}
           />
-          <DashBarChart
-            title="Fila de moderação (chat)"
-            items={[
-              { label: "Abertas", value: data?.reports.open ?? 0 },
-              { label: "Revisadas", value: data?.reports.reviewed ?? 0 },
-              { label: "Descartadas", value: data?.reports.dismissed ?? 0 },
-            ]}
-            emptyLabel={
-              ready
-                ? "Nenhuma denúncia — aparecem quando o usuário denuncia no chat"
-                : "Carregando…"
-            }
-          />
         </div>
       </section>
 
@@ -278,20 +375,6 @@ export function AdminDashboard({ appId }: Props) {
               },
               { label: "Na amostra", value: data?.sos.total ?? 0 },
             ]}
-          />
-          <DashBarChart
-            title="Eventos (FCM automático — sem fila BKF)"
-            items={[
-              { label: "Alertas", value: data?.sos.alerts ?? 0 },
-              { label: "Falsos", value: data?.sos.falseAlarms ?? 0 },
-              { label: "Suprimidos", value: data?.sos.suppressed ?? 0 },
-              { label: "Duplicados", value: data?.sos.deduped ?? 0 },
-            ]}
-            emptyLabel={
-              ready
-                ? "Nenhum evento — aparecem após SOS/queda no app"
-                : "Carregando…"
-            }
           />
         </div>
       </section>
@@ -325,44 +408,6 @@ export function AdminDashboard({ appId }: Props) {
               },
             ]}
           />
-          <DashBarChart
-            title="Falhas por tipo de trigger"
-            items={[
-              {
-                label: "Callable",
-                value: data?.functionFailures.callable ?? 0,
-              },
-              {
-                label: "Agendada",
-                value: data?.functionFailures.schedule ?? 0,
-              },
-              {
-                label: "Firestore",
-                value: data?.functionFailures.firestore ?? 0,
-              },
-              { label: "HTTP", value: data?.functionFailures.https ?? 0 },
-            ]}
-            emptyLabel={
-              ready
-                ? "Nenhuma falha — aparecem quando uma Function quebra"
-                : "Carregando…"
-            }
-          />
-        </div>
-      </section>
-
-      <section className="bkf-dash__section">
-        <div className="bkf-dash__section-head">
-          <h3>Próximos módulos</h3>
-        </div>
-        <div className="bkf-dash__soon">
-          {COMING_SOON.map((item) => (
-            <div key={item.id} className="bkf-dash-soon-card">
-              <h4>{item.title}</h4>
-              <p>{item.blurb}</p>
-              <span className="bkf-tag">Em breve</span>
-            </div>
-          ))}
         </div>
       </section>
     </div>

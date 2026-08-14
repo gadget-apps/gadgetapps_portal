@@ -29,7 +29,7 @@ import {
 import { chatMetricsFromTickets } from "@/lib/bkf/dashboard-metrics";
 import { isBootstrapEmail } from "@/lib/bkf/operators";
 import { KpiStrip } from "@/components/bkf/KpiStrip";
-import { DashBarChart } from "@/components/bkf/DashBarChart";
+import { DashColumnChart } from "@/components/bkf/DashColumnChart";
 
 type Props = {
   appId: string;
@@ -319,7 +319,7 @@ export function ChatQueueModule({ appId }: Props) {
       <aside className="chatq__queue">
         <div className="chatq__queue-head">
           <div>
-            <h2 className="bkf-panel__title">Fila de atendimento</h2>
+            <h2 className="bkf-panel__title">Conversas</h2>
             <p className="bkf-panel__sub">
               {counts.unread > 0 ? `${counts.unread} não lidas · ` : ""}
               {counts.open} novas · Firestore ao vivo
@@ -327,54 +327,19 @@ export function ChatQueueModule({ appId }: Props) {
           </div>
         </div>
 
-        {isAdmin ? (
-          <div className="chatq__admin-dash">
-            <KpiStrip
-              items={[
-                {
-                  label: "Pendentes",
-                  value: chatDash.pending,
-                  tone: chatDash.pending > 0 ? "warn" : "ok",
-                },
-                { label: "Abertos", value: chatDash.open },
-                { label: "Aguardando", value: chatDash.pendingStatus },
-                { label: "Em atendimento", value: chatDash.assigned },
-                {
-                  label: "Não lidas",
-                  value: chatDash.unread,
-                  tone: chatDash.unread > 0 ? "bad" : "default",
-                },
-              ]}
-            />
-            <DashBarChart
-              title="Prioridade (pendentes)"
-              items={[
-                { label: "Normal", value: chatDash.normal },
-                { label: "Alta", value: chatDash.high },
-                { label: "Urgente", value: chatDash.urgent },
-              ]}
-              emptyLabel="Nenhum pendente"
-            />
-          </div>
-        ) : null}
-
         {error ? (
-          <p className="bkf-empty" style={{ color: "#b00020", marginBottom: "0.75rem" }}>
+          <p
+            className="bkf-empty"
+            style={{ color: "#b00020", marginBottom: "0.75rem" }}
+          >
             {error}
           </p>
         ) : null}
 
         <form
           onSubmit={saveAttendantName}
-          style={{
-            marginBottom: "0.9rem",
-            padding: "0.85rem",
-            borderRadius: "0.75rem",
-            border: nameReady ? "1px solid var(--line, #e5e7eb)" : "1px solid #f59e0b",
-            background: nameReady ? "var(--soft, #f5f5f7)" : "#fffbeb",
-            display: "grid",
-            gap: "0.5rem",
-          }}
+          className="chatq__name-form"
+          data-ready={nameReady ? "1" : "0"}
         >
           <strong style={{ fontSize: "0.9rem" }}>
             Meu nome de atendimento
@@ -471,155 +436,205 @@ export function ChatQueueModule({ appId }: Props) {
         </ul>
       </aside>
 
-      <section className="chatq__thread">
-        {!selected ? (
-          <div className="chatq__empty">
-            <p>Selecione uma conversa na fila.</p>
+      <div className="chatq__main">
+        {isAdmin ? (
+          <div className="chatq__dash">
+            <div className="chatq__dash-head">
+              <h2 className="bkf-panel__title">Resumo da fila</h2>
+              <p className="bkf-panel__sub">KPIs do atendimento · ao vivo</p>
+            </div>
+            <div className="chatq__dash-body">
+              <KpiStrip
+                items={[
+                  {
+                    label: "Pendentes",
+                    value: chatDash.pending,
+                    tone: chatDash.pending > 0 ? "warn" : "ok",
+                  },
+                  { label: "Abertos", value: chatDash.open },
+                  { label: "Aguardando", value: chatDash.pendingStatus },
+                  { label: "Em atendimento", value: chatDash.assigned },
+                  {
+                    label: "Não lidas",
+                    value: chatDash.unread,
+                    tone: chatDash.unread > 0 ? "bad" : "default",
+                  },
+                ]}
+              />
+              <DashColumnChart
+                title="Prioridade (pendentes)"
+                items={[
+                  {
+                    label: "Normal",
+                    value: chatDash.normal,
+                    tone: "muted",
+                  },
+                  { label: "Alta", value: chatDash.high, tone: "warn" },
+                  {
+                    label: "Urgente",
+                    value: chatDash.urgent,
+                    tone: "bad",
+                  },
+                ]}
+                emptyLabel="Nenhum pendente"
+              />
+            </div>
           </div>
-        ) : (
-          <>
-            <header className="chatq__thread-head">
-              <div>
-                <h3>{selected.userName}</h3>
-                <p>
-                  {selected.userEmail} · {selected.subject}
-                </p>
-              </div>
-              <div className="chatq__thread-actions">
-                <button
-                  type="button"
-                  className="bkf-action"
-                  disabled={busy}
-                  onClick={() => assignToMe(selected.id)}
-                  title={`Envia saudação como ${operatorName}`}
-                >
-                  Iniciar atendimento
-                </button>
-                <select
-                  className="bkf-input"
-                  style={{ width: "auto", padding: "0.35rem 0.55rem" }}
-                  value={selected.status}
-                  onChange={(e) =>
-                    setStatus(selected.id, e.target.value as TicketStatus)
-                  }
-                >
-                  <option value="open">Novo</option>
-                  <option value="assigned">Em atendimento</option>
-                  <option value="pending">Aguardando</option>
-                  <option value="resolved">Resolvido</option>
-                </select>
-                <select
-                  className="bkf-input"
-                  style={{ width: "auto", padding: "0.35rem 0.55rem" }}
-                  value={selected.priority}
-                  onChange={(e) =>
-                    setPriority(selected.id, e.target.value as TicketPriority)
-                  }
-                >
-                  <option value="low">Baixa</option>
-                  <option value="normal">Normal</option>
-                  <option value="high">Alta</option>
-                  <option value="urgent">Urgente</option>
-                </select>
-              </div>
-            </header>
+        ) : null}
 
-            <div className="chatq__assignee">
-              Responsável:{" "}
-              <strong>{selected.assigneeEmail ?? "sem atribuição"}</strong>
-              {nameReady ? (
-                <>
-                  {" · "}
-                  Seu nome no chat: <strong>{operatorName}</strong>
-                </>
-              ) : (
-                <>
-                  {" · "}
-                  <span style={{ color: "#b45309" }}>
-                    Defina seu nome acima para atender
-                  </span>
-                </>
-              )}
+        <section className="chatq__thread">
+          {!selected ? (
+            <div className="chatq__empty">
+              <p>Selecione uma conversa na fila.</p>
             </div>
-
-            <div className="chatq__messages" ref={messagesRef}>
-              {messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={`chatq__bubble ${m.sender === "staff" ? "is-staff" : "is-user"}`}
-                >
-                  <div className="chatq__bubble-meta">
-                    {m.senderName} ·{" "}
-                    {new Date(m.createdAt).toLocaleString("pt-BR")}
-                  </div>
-                  {m.isDeleted ? (
-                    <p className="chatq__deleted">Mensagem apagada</p>
-                  ) : (
-                    <>
-                      <p>{m.text}</p>
-                      {m.isEdited ? (
-                        <span className="chatq__edited">editada</span>
-                      ) : null}
-                    </>
-                  )}
-                  {m.sender === "staff" && !m.isDeleted ? (
-                    <div className="chatq__msg-actions">
-                      <button
-                        type="button"
-                        className="chatq__msg-btn"
-                        onClick={() => editStaffMessage(selected.id, m.id)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        className="chatq__msg-btn"
-                        onClick={() => deleteStaffMessage(selected.id, m.id)}
-                      >
-                        Apagar
-                      </button>
-                    </div>
-                  ) : null}
+          ) : (
+            <>
+              <header className="chatq__thread-head">
+                <div>
+                  <h3>{selected.userName}</h3>
+                  <p>
+                    {selected.userEmail} · {selected.subject}
+                  </p>
                 </div>
-              ))}
-            </div>
-
-            <div className="chatq__footer">
-              <div className="chatq__macros">
-                {macros.map((macro) => (
+                <div className="chatq__thread-actions">
                   <button
-                    key={macro.id}
                     type="button"
-                    className="bkf-chip"
-                    onClick={() => applyMacro(macro.body)}
-                    title={macro.body}
+                    className="bkf-action"
+                    disabled={busy}
+                    onClick={() => assignToMe(selected.id)}
+                    title={`Envia saudação como ${operatorName}`}
                   >
-                    {macro.title}
+                    Iniciar atendimento
                   </button>
+                  <select
+                    className="bkf-input"
+                    style={{ width: "auto", padding: "0.35rem 0.55rem" }}
+                    value={selected.status}
+                    onChange={(e) =>
+                      setStatus(selected.id, e.target.value as TicketStatus)
+                    }
+                  >
+                    <option value="open">Novo</option>
+                    <option value="assigned">Em atendimento</option>
+                    <option value="pending">Aguardando</option>
+                    <option value="resolved">Resolvido</option>
+                  </select>
+                  <select
+                    className="bkf-input"
+                    style={{ width: "auto", padding: "0.35rem 0.55rem" }}
+                    value={selected.priority}
+                    onChange={(e) =>
+                      setPriority(
+                        selected.id,
+                        e.target.value as TicketPriority,
+                      )
+                    }
+                  >
+                    <option value="low">Baixa</option>
+                    <option value="normal">Normal</option>
+                    <option value="high">Alta</option>
+                    <option value="urgent">Urgente</option>
+                  </select>
+                </div>
+              </header>
+
+              <div className="chatq__assignee">
+                Responsável:{" "}
+                <strong>{selected.assigneeEmail ?? "sem atribuição"}</strong>
+                {nameReady ? (
+                  <>
+                    {" · "}
+                    Seu nome no chat: <strong>{operatorName}</strong>
+                  </>
+                ) : (
+                  <>
+                    {" · "}
+                    <span style={{ color: "#b45309" }}>
+                      Defina seu nome acima para atender
+                    </span>
+                  </>
+                )}
+              </div>
+
+              <div className="chatq__messages" ref={messagesRef}>
+                {messages.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`chatq__bubble ${m.sender === "staff" ? "is-staff" : "is-user"}`}
+                  >
+                    <div className="chatq__bubble-meta">
+                      {m.senderName} ·{" "}
+                      {new Date(m.createdAt).toLocaleString("pt-BR")}
+                    </div>
+                    {m.isDeleted ? (
+                      <p className="chatq__deleted">Mensagem apagada</p>
+                    ) : (
+                      <>
+                        <p>{m.text}</p>
+                        {m.isEdited ? (
+                          <span className="chatq__edited">editada</span>
+                        ) : null}
+                      </>
+                    )}
+                    {m.sender === "staff" && !m.isDeleted ? (
+                      <div className="chatq__msg-actions">
+                        <button
+                          type="button"
+                          className="chatq__msg-btn"
+                          onClick={() => editStaffMessage(selected.id, m.id)}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          className="chatq__msg-btn"
+                          onClick={() => deleteStaffMessage(selected.id, m.id)}
+                        >
+                          Apagar
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 ))}
               </div>
 
-              <form className="chatq__composer" onSubmit={sendReply}>
-                <textarea
-                  className="chatq__textarea"
-                  rows={3}
-                  placeholder="Escreva a resposta ao usuário…"
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  disabled={busy}
-                />
-                <button
-                  type="submit"
-                  className="pill pill-blue"
-                  disabled={!draft.trim() || busy}
-                >
-                  {busy ? "Enviando…" : "Enviar"}
-                </button>
-              </form>
-            </div>
-          </>
-        )}
-      </section>
+              <div className="chatq__footer">
+                <div className="chatq__macros">
+                  {macros.map((macro) => (
+                    <button
+                      key={macro.id}
+                      type="button"
+                      className="bkf-chip"
+                      onClick={() => applyMacro(macro.body)}
+                      title={macro.body}
+                    >
+                      {macro.title}
+                    </button>
+                  ))}
+                </div>
+
+                <form className="chatq__composer" onSubmit={sendReply}>
+                  <textarea
+                    className="chatq__textarea"
+                    rows={3}
+                    placeholder="Escreva a resposta ao usuário…"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    disabled={busy}
+                  />
+                  <button
+                    type="submit"
+                    className="pill pill-blue"
+                    disabled={!draft.trim() || busy}
+                  >
+                    {busy ? "Enviando…" : "Enviar"}
+                  </button>
+                </form>
+              </div>
+            </>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
