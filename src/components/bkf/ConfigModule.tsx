@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { isBootstrapEmail } from "@/lib/bkf/operators";
+import { isBkfAdminSession } from "@/lib/bkf/operators";
 import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
 import {
   DEFAULT_FORCE_MESSAGE,
@@ -23,7 +23,7 @@ export function ConfigModule() {
   const [packageId, setPackageId] = useState("br.com.angelscare.app");
 
   useEffect(() => {
-    setIsAdmin(isBootstrapEmail(getAngelsCareAuth().currentUser?.email));
+    setIsAdmin(isBkfAdminSession());
   }, []);
 
   useEffect(() => {

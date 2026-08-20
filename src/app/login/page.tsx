@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -11,6 +11,7 @@ import {
 } from "firebase/auth";
 import { SiteFooter, SiteHeader } from "@/components/PublicShell";
 import { claimBkfAccess, writeBkfSession, clearBkfSession } from "@/lib/bkf/operators";
+import { consumeLoginWipeToken, markLoginFieldsMustWipe } from "@/lib/bkf/login-fields";
 import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
 
 type Mode = "login" | "register";
@@ -59,15 +60,93 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
+  /** Desbloqueia digitação após montar — reduz autofill do gerenciador de senhas. */
+  const [fieldsUnlocked, setFieldsUnlocked] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  /** Depois que o usuário digita, paramos de limpar (senão apaga ao trocar de aba). */
+  const userEditedRef = useRef(false);
+  const wipeWindowActiveRef = useRef(true);
+
+  const wipeCredentials = useCallback((force = false) => {
+    if (!force && userEditedRef.current) return;
+    setEmail("");
+    setPassword("");
+    const emailEl = emailRef.current;
+    const passEl = passwordRef.current;
+    if (emailEl) {
+      emailEl.value = "";
+      emailEl.setAttribute("value", "");
+    }
+    if (passEl) {
+      passEl.value = "";
+      passEl.setAttribute("value", "");
+    }
+    if (!userEditedRef.current) {
+      formRef.current?.reset();
+    }
+  }, []);
+
+  useEffect(() => {
+    userEditedRef.current = false;
+    wipeWindowActiveRef.current = true;
+    markLoginFieldsMustWipe();
+    consumeLoginWipeToken();
+    wipeCredentials(true);
+    setFieldsUnlocked(false);
+
+    // Autofill do Chrome costuma preencher depois do paint.
+    const timers = [0, 50, 150, 400, 1000].map((ms) =>
+      window.setTimeout(() => {
+        if (!wipeWindowActiveRef.current) return;
+        wipeCredentials(false);
+        if (ms >= 150) setFieldsUnlocked(true);
+        if (ms >= 1000) wipeWindowActiveRef.current = false;
+      }, ms),
+    );
+
+    // Volta via bfcache / histórico: campos devem nascer vazios de novo.
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted || wipeWindowActiveRef.current) {
+        userEditedRef.current = false;
+        wipeCredentials(true);
+      }
+    };
+
+    window.addEventListener("pageshow", onPageShow);
+
+    return () => {
+      timers.forEach((id) => window.clearTimeout(id));
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [wipeCredentials]);
+
+  function onEmailChange(value: string) {
+    userEditedRef.current = true;
+    wipeWindowActiveRef.current = false;
+    setEmail(value);
+  }
+
+  function onPasswordChange(value: string) {
+    userEditedRef.current = true;
+    wipeWindowActiveRef.current = false;
+    setPassword(value);
+  }
 
   async function finishAccess(uid: string, userEmail: string) {
     const claim = await claimBkfAccess({ uid, email: userEmail });
     if (!claim.ok) {
       await signOut(getAngelsCareAuth());
       clearBkfSession();
+      userEditedRef.current = false;
+      wipeCredentials(true);
       throw new Error(claim.reason);
     }
-    writeBkfSession(userEmail, uid);
+    userEditedRef.current = false;
+    wipeCredentials(true);
+    markLoginFieldsMustWipe();
+    writeBkfSession(userEmail, uid, claim.role);
     router.push("/intranet/");
   }
 
@@ -85,6 +164,7 @@ export default function LoginPage() {
       return;
     }
 
+    const submittedPassword = password;
     setBusy(true);
     try {
       const auth = getAngelsCareAuth();
@@ -93,13 +173,20 @@ export default function LoginPage() {
           ? await createUserWithEmailAndPassword(
               auth,
               trimmedEmail,
-              password,
+              submittedPassword,
             )
-          : await signInWithEmailAndPassword(auth, trimmedEmail, password);
+          : await signInWithEmailAndPassword(
+              auth,
+              trimmedEmail,
+              submittedPassword,
+            );
 
       const userEmail = (cred.user.email ?? trimmedEmail).toLowerCase();
       await finishAccess(cred.user.uid, userEmail);
     } catch (err) {
+      // Após tentativa: limpa senha; e-mail some também para não reaparecer “salvo”.
+      userEditedRef.current = false;
+      wipeCredentials(true);
       setError(mapAuthError(err));
     } finally {
       setBusy(false);
@@ -120,6 +207,8 @@ export default function LoginPage() {
       setInfo(
         "Se esse e-mail existir no Firebase Authentication, enviamos um link para redefinir a senha. Confira a caixa de entrada (e spam).",
       );
+      userEditedRef.current = false;
+      wipeCredentials(true);
     } catch (err) {
       setError(mapAuthError(err));
     } finally {
@@ -150,7 +239,11 @@ export default function LoginPage() {
           <button
             type="button"
             className={`bkf-chip ${mode === "login" ? "is-on" : ""}`}
-            onClick={() => setMode("login")}
+            onClick={() => {
+              setMode("login");
+              userEditedRef.current = false;
+              wipeCredentials(true);
+            }}
             disabled={busy}
           >
             Entrar
@@ -158,7 +251,11 @@ export default function LoginPage() {
           <button
             type="button"
             className={`bkf-chip ${mode === "register" ? "is-on" : ""}`}
-            onClick={() => setMode("register")}
+            onClick={() => {
+              setMode("register");
+              userEditedRef.current = false;
+              wipeCredentials(true);
+            }}
             disabled={busy}
           >
             Aceitar convite
@@ -166,7 +263,12 @@ export default function LoginPage() {
         </div>
 
         <form
+          ref={formRef}
           onSubmit={onSubmit}
+          autoComplete="off"
+          data-lpignore="true"
+          data-1p-ignore="true"
+          data-bwignore="true"
           style={{
             marginTop: "1rem",
             display: "grid",
@@ -177,13 +279,56 @@ export default function LoginPage() {
             border: "1px solid var(--line)",
           }}
         >
+          {/* Honeypot: despista gerenciadores de senha que varrem o 1º email/password. */}
+          <input
+            type="text"
+            name="intranet_username_trap"
+            autoComplete="username"
+            tabIndex={-1}
+            aria-hidden="true"
+            value=""
+            readOnly
+            style={{
+              position: "absolute",
+              left: "-9999px",
+              height: 0,
+              width: 0,
+              opacity: 0,
+            }}
+          />
+          <input
+            type="password"
+            name="intranet_password_trap"
+            autoComplete="current-password"
+            tabIndex={-1}
+            aria-hidden="true"
+            value=""
+            readOnly
+            style={{
+              position: "absolute",
+              left: "-9999px",
+              height: 0,
+              width: 0,
+              opacity: 0,
+            }}
+          />
           <label style={{ display: "grid", gap: "0.4rem", fontSize: "0.875rem" }}>
             E-mail
             <input
+              ref={emailRef}
               type="email"
+              name="bkf_intranet_email_field"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="username"
+              onChange={(e) => onEmailChange(e.target.value)}
+              onFocus={() => setFieldsUnlocked(true)}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-bwignore="true"
+              readOnly={!fieldsUnlocked}
               disabled={busy}
               style={{
                 border: "1px solid var(--line)",
@@ -196,12 +341,17 @@ export default function LoginPage() {
           <label style={{ display: "grid", gap: "0.4rem", fontSize: "0.875rem" }}>
             Senha
             <input
+              ref={passwordRef}
               type="password"
+              name="bkf_intranet_password_field"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete={
-                mode === "register" ? "new-password" : "current-password"
-              }
+              onChange={(e) => onPasswordChange(e.target.value)}
+              onFocus={() => setFieldsUnlocked(true)}
+              autoComplete="new-password"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-bwignore="true"
+              readOnly={!fieldsUnlocked}
               disabled={busy}
               style={{
                 border: "1px solid var(--line)",

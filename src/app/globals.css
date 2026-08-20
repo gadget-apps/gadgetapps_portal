@@ -1243,6 +1243,24 @@ body {
   color: #b91c1c;
 }
 
+.bkf-tag--role-contratante {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.bkf-tag--role-profissional {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.bkf-tag--role-assistido {
+  background: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+}
+
 .bkf-label {
   display: block;
   font-size: 0.72rem;
@@ -1506,18 +1524,18 @@ body {
 
 .bkf-kpi-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
-  gap: 0.55rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
   margin: 0 0 0.9rem;
 }
 
 .bkf-kpi {
   border: 1px solid #e5e7eb;
   border-radius: 0.75rem;
-  padding: 0.65rem 0.75rem;
+  padding: 0.8rem 0.9rem;
   background: #fafafa;
   display: grid;
-  gap: 0.15rem;
+  gap: 0.2rem;
 }
 
 .bkf-kpi.is-ok {
@@ -1547,7 +1565,7 @@ body {
 }
 
 .bkf-kpi__value {
-  font-size: 1.25rem;
+  font-size: 1.45rem;
   font-weight: 700;
   line-height: 1.1;
 }
@@ -1596,8 +1614,8 @@ body {
 
 .bkf-dash__charts {
   display: grid;
-  gap: 0.5rem;
-  margin-top: 0.35rem;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
   grid-template-columns: 1fr;
 }
 
@@ -1607,28 +1625,17 @@ body {
   }
 }
 
-@media (min-width: 1100px) {
-  .bkf-dash__charts {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1400px) {
-  .bkf-dash__charts {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
 .bkf-dash__charts--compact {
   margin-bottom: 0.5rem;
 }
 
 .bkf-dash-chart {
   border: 1px solid #eef0f3;
-  border-radius: 0.6rem;
+  border-radius: 0.75rem;
   background: #fcfcfd;
-  padding: 0.45rem 0.55rem 0.5rem;
+  padding: 0.85rem 1rem 0.95rem;
   min-width: 0;
+  min-height: 11rem;
 }
 
 .bkf-dash-chart__head {
@@ -1636,12 +1643,12 @@ body {
   align-items: baseline;
   justify-content: space-between;
   gap: 0.35rem;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.55rem;
 }
 
 .bkf-dash-chart__title {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: #374151;
   overflow: hidden;
@@ -1650,7 +1657,7 @@ body {
 }
 
 .bkf-dash-chart__total {
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   color: #9ca3af;
   white-space: nowrap;
 }
@@ -1751,8 +1758,8 @@ body {
 .bkf-donut__viz {
   position: relative;
   flex: 0 0 auto;
-  width: 64px;
-  height: 64px;
+  width: 120px;
+  height: 120px;
   margin: 0 auto;
 }
 
@@ -1814,7 +1821,7 @@ body {
 }
 
 .bkf-donut__center strong {
-  font-size: 0.8rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: #111827;
 }
@@ -1824,7 +1831,7 @@ body {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.15rem;
+  gap: 0.28rem;
   flex: 1;
   min-width: 0;
 }
@@ -1832,10 +1839,10 @@ body {
 .bkf-donut__legend li,
 .bkf-stack__legend li {
   display: grid;
-  grid-template-columns: 0.45rem minmax(0, 1fr) auto auto;
+  grid-template-columns: 0.55rem minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 0.28rem;
-  font-size: 0.68rem;
+  gap: 0.35rem;
+  font-size: 0.78rem;
   color: #4b5563;
   min-width: 0;
 }
@@ -1853,15 +1860,15 @@ body {
 }
 
 .bkf-donut__swatch {
-  width: 0.45rem;
-  height: 0.45rem;
+  width: 0.55rem;
+  height: 0.55rem;
   border-radius: 999px;
   flex-shrink: 0;
 }
 
 .bkf-donut__pct {
   color: #9ca3af;
-  font-size: 0.62rem;
+  font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1869,23 +1876,23 @@ body {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
-  gap: 0.3rem;
+  gap: 0.55rem;
   align-items: end;
-  min-height: 5.25rem;
-  padding-top: 0.1rem;
+  min-height: 8.5rem;
+  padding-top: 0.25rem;
 }
 
 .bkf-cols__item {
   display: grid;
   grid-template-rows: auto 1fr auto;
   justify-items: center;
-  gap: 0.15rem;
+  gap: 0.25rem;
   min-width: 0;
-  height: 5.25rem;
+  height: 8.5rem;
 }
 
 .bkf-cols__value {
-  font-size: 0.68rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: #111827;
   font-variant-numeric: tabular-nums;
@@ -1893,13 +1900,13 @@ body {
 
 .bkf-cols__track {
   width: 100%;
-  max-width: 1.55rem;
+  max-width: 2.25rem;
   height: 100%;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   background: #eef0f3;
-  border-radius: 0.3rem 0.3rem 0.15rem 0.15rem;
+  border-radius: 0.35rem 0.35rem 0.15rem 0.15rem;
   overflow: hidden;
 }
 
@@ -1911,7 +1918,7 @@ body {
 }
 
 .bkf-cols__label {
-  font-size: 0.62rem;
+  font-size: 0.72rem;
   color: #6b7280;
   text-align: center;
   max-width: 100%;
@@ -1922,11 +1929,11 @@ body {
 
 .bkf-stack {
   display: flex;
-  height: 0.55rem;
+  height: 1.1rem;
   border-radius: 999px;
   overflow: hidden;
   background: #eef0f3;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.55rem;
 }
 
 .bkf-stack__seg {

@@ -5,7 +5,7 @@ import type { BkfUser } from "@/data/bkf/mock-users";
 import {
   getAngelsCareAuth,
 } from "@/lib/firebase/angels-care";
-import { isBootstrapEmail } from "@/lib/bkf/operators";
+import { isBkfAdminSession } from "@/lib/bkf/operators";
 import {
   BKF_PREMIUM_PRODUCTS,
   addDaysYmd,
@@ -24,6 +24,12 @@ import { KpiStrip } from "@/components/bkf/KpiStrip";
 type Props = { appId: string };
 
 type Filter = "all" | "active" | "disabled" | "premium";
+
+function roleTagClass(role: BkfUser["userRole"]): string {
+  if (role === "Profissional") return "bkf-tag bkf-tag--role-profissional";
+  if (role === "Assistido") return "bkf-tag bkf-tag--role-assistido";
+  return "bkf-tag bkf-tag--role-contratante";
+}
 
 type PremiumForm = {
   productId: string;
@@ -72,7 +78,7 @@ export function UsersModule({ appId }: Props) {
   const [, startTransition] = useTransition();
 
   useEffect(() => {
-    setIsAdmin(isBootstrapEmail(getAngelsCareAuth().currentUser?.email));
+    setIsAdmin(isBkfAdminSession());
   }, []);
 
   useEffect(() => {
@@ -348,7 +354,7 @@ export function UsersModule({ appId }: Props) {
         <div>
           <h2 className="bkf-panel__title">Usuários</h2>
           <p className="bkf-panel__sub">
-            Contas do Angel&apos;s Care (até 80 por carga). Ativar/desativar
+            Contas do Angel&apos;s Care (lista completa). Ativar/desativar
             conta bloqueia o login. Admin pode conceder ou revogar Premium com
             plano e vigência.
           </p>
@@ -362,7 +368,7 @@ export function UsersModule({ appId }: Props) {
         <KpiStrip
           loading={!ready}
           items={[
-            { label: "Na amostra", value: userKpis.total },
+            { label: "Total", value: userKpis.total },
             { label: "Ativos", value: userKpis.active, tone: "ok" },
             {
               label: "Desativados",
@@ -433,10 +439,14 @@ export function UsersModule({ appId }: Props) {
                   <td>
                     <div className="bkf-user">
                       <strong>{u.displayName}</strong>
-                      <span>{u.email}</span>
+                      <span className="bkf-mono">
+                        {u.email || "sem e-mail no perfil"}
+                      </span>
                     </div>
                   </td>
-                  <td>{u.userRole}</td>
+                  <td>
+                    <span className={roleTagClass(u.userRole)}>{u.userRole}</span>
+                  </td>
                   <td>
                     {u.isPremium ? (
                       <span className="bkf-tag bkf-tag--ok">

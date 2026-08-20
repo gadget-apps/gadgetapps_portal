@@ -27,7 +27,7 @@ import {
   watchThreadMessages,
 } from "@/lib/bkf/support-firestore";
 import { chatMetricsFromTickets } from "@/lib/bkf/dashboard-metrics";
-import { isBootstrapEmail } from "@/lib/bkf/operators";
+import { isBkfAdminSession } from "@/lib/bkf/operators";
 import { KpiStrip } from "@/components/bkf/KpiStrip";
 import { DashColumnChart } from "@/components/bkf/DashColumnChart";
 
@@ -48,9 +48,7 @@ export function ChatQueueModule({ appId }: Props) {
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [operatorEmail, setOperatorEmail] = useState(
-    "gadget.apps.technology@gmail.com",
-  );
+  const [operatorEmail, setOperatorEmail] = useState("");
   const [operatorName, setOperatorName] = useState("");
   const [nameDraft, setNameDraft] = useState("");
   const [nameReady, setNameReady] = useState(false);
@@ -71,7 +69,7 @@ export function ChatQueueModule({ appId }: Props) {
     const unsub = onAuthStateChanged(getAngelsCareAuth(), (user) => {
       if (!user?.uid) return;
       if (user.email) setOperatorEmail(user.email);
-      setIsAdmin(isBootstrapEmail(user.email));
+      setIsAdmin(isBkfAdminSession());
       void getOperatorProfile(user.uid).then((profile) => {
         if (!profile) {
           setOperatorName("");

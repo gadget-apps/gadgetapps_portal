@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { KpiStrip } from "@/components/bkf/KpiStrip";
 import { DashBarChart } from "@/components/bkf/DashBarChart";
-import { isBootstrapEmail } from "@/lib/bkf/operators";
+import { isBkfAdminSession } from "@/lib/bkf/operators";
 import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
 import { setUserDisabledByAdmin } from "@/lib/bkf/users-firestore";
 import {
@@ -43,7 +43,7 @@ export function ReportsModule({ appId }: Props) {
   const [, startTransition] = useTransition();
 
   useEffect(() => {
-    setIsAdmin(isBootstrapEmail(getAngelsCareAuth().currentUser?.email));
+    setIsAdmin(isBkfAdminSession());
   }, []);
 
   useEffect(() => {
@@ -127,8 +127,8 @@ export function ReportsModule({ appId }: Props) {
       );
       setNote(
         status === "reviewed"
-          ? `Denúncia marcada como revisada.`
-          : `Denúncia descartada.`,
+          ? "Denúncia marcada como revisada. O denunciante recebe um push."
+          : "Denúncia descartada. O denunciante recebe um push.",
       );
       setSelected(null);
       setReviewNote("");
@@ -513,6 +513,19 @@ export function ReportsModule({ appId }: Props) {
             </label>
 
             <div className="bkf-modal__actions" style={{ flexWrap: "wrap" }}>
+              {selected.status === "open" && !selected.isSeed ? (
+                <p
+                  style={{
+                    flex: "1 1 100%",
+                    margin: "0 0 0.35rem",
+                    fontSize: "0.8rem",
+                    color: "#6b7280",
+                  }}
+                >
+                  Ao fechar (revisada ou descartada), o denunciante recebe um
+                  aviso por push — texto genérico, sem detalhes da conversa.
+                </p>
+              ) : null}
               {!selected.isSeed ? (
                 <button
                   type="button"
@@ -554,6 +567,7 @@ export function ReportsModule({ appId }: Props) {
               ) : (
                 <span className="bkf-tag">
                   Já {selected.status === "reviewed" ? "revisada" : "descartada"}
+                  {" · denunciante notificado por push"}
                 </span>
               )}
             </div>

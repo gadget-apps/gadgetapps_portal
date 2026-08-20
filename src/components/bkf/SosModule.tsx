@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { KpiStrip } from "@/components/bkf/KpiStrip";
 import { DashBarChart } from "@/components/bkf/DashBarChart";
-import { isBootstrapEmail } from "@/lib/bkf/operators";
+import { isBkfAdminSession } from "@/lib/bkf/operators";
 import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
 import {
   formatSosDt,
@@ -51,7 +51,7 @@ export function SosModule({ appId }: Props) {
   const [, startTransition] = useTransition();
 
   useEffect(() => {
-    setIsAdmin(isBootstrapEmail(getAngelsCareAuth().currentUser?.email));
+    setIsAdmin(isBkfAdminSession());
   }, []);
 
   useEffect(() => {

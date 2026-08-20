@@ -24,8 +24,8 @@ export function DashDonutChart({
   const [tip, setTip] = useState<string | null>(null);
   const total = chartTotal(items);
   const empty = items.length === 0 || total === 0;
-  const size = 64;
-  const stroke = 10;
+  const size = 120;
+  const stroke = 16;
   const cx = size / 2;
   const cy = size / 2;
   const r = (size - stroke) / 2;

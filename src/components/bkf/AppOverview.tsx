@@ -6,7 +6,7 @@ import type { CatalogApp } from "@/data/apps";
 import { modulesForRole } from "@/data/bkf/modules";
 import { AdminDashboard } from "@/components/bkf/AdminDashboard";
 import { LiveQueuePriorityBadges } from "@/components/bkf/LiveQueuePriorityBadges";
-import { isBootstrapEmail } from "@/lib/bkf/operators";
+import { isBkfAdminSession } from "@/lib/bkf/operators";
 import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
 
 type Props = {
@@ -18,7 +18,7 @@ export function AppOverview({ app }: Props) {
   const [roleReady, setRoleReady] = useState(false);
 
   useEffect(() => {
-    setIsAdmin(isBootstrapEmail(getAngelsCareAuth().currentUser?.email));
+    setIsAdmin(isBkfAdminSession());
     setRoleReady(true);
   }, []);
 

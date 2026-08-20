@@ -7,7 +7,7 @@ export type BkfUser = {
   displayName: string;
   email: string;
   phone?: string;
-  userRole: "Contratante" | "Cuidador (Profissional)" | "Assistido";
+  userRole: "Contratante" | "Profissional" | "Assistido";
   isPremium: boolean;
   premiumUntil?: string;
   premiumProductId?: string;
@@ -36,7 +36,7 @@ export const MOCK_USERS_ANGELS_CARE: BkfUser[] = [
     displayName: "João Pereira",
     email: "joao.pereira@email.com",
     phone: "+55 21 97777-2002",
-    userRole: "Cuidador (Profissional)",
+    userRole: "Profissional",
     isPremium: false,
     accountDisabled: false,
     lastActiveAt: "2026-08-11T19:40:00",
@@ -68,7 +68,7 @@ export const MOCK_USERS_ANGELS_CARE: BkfUser[] = [
     id: "u_005",
     displayName: "Fernanda Lima",
     email: "fernanda.lima@email.com",
-    userRole: "Cuidador (Profissional)",
+    userRole: "Profissional",
     isPremium: true,
     premiumUntil: "2026-10-05",
     accountDisabled: false,

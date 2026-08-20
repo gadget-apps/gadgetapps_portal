@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FunctionsMonitorPanel } from "@/components/bkf/FunctionsMonitorPanel";
-import { isBootstrapEmail } from "@/lib/bkf/operators";
+import { isBkfAdminSession } from "@/lib/bkf/operators";
 import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
 
 type Props = { appId: string };
@@ -11,7 +11,7 @@ export function FunctionsModule({ appId }: Props) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    setIsAdmin(isBootstrapEmail(getAngelsCareAuth().currentUser?.email));
+    setIsAdmin(isBkfAdminSession());
   }, []);
 
   if (appId !== "angels_care") {

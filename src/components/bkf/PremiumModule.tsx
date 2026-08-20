@@ -13,7 +13,7 @@ import {
   type PremiumStatusRow,
 } from "@/lib/bkf/premium-firestore";
 import { premiumMetricsFromRows } from "@/lib/bkf/dashboard-metrics";
-import { isBootstrapEmail } from "@/lib/bkf/operators";
+import { isBkfAdminSession } from "@/lib/bkf/operators";
 import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
 import { KpiStrip } from "@/components/bkf/KpiStrip";
 import { DashBarChart } from "@/components/bkf/DashBarChart";
@@ -37,7 +37,7 @@ export function PremiumModule({ appId }: Props) {
   const [, startTransition] = useTransition();
 
   useEffect(() => {
-    setIsAdmin(isBootstrapEmail(getAngelsCareAuth().currentUser?.email));
+    setIsAdmin(isBkfAdminSession());
   }, []);
 
   useEffect(() => {

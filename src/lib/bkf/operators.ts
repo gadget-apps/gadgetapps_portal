@@ -11,24 +11,32 @@ import {
 } from "firebase/firestore";
 import type { User } from "firebase/auth";
 import { getAngelsCareAuth, getAngelsCareDb } from "@/lib/firebase/angels-care";
+import { markLoginFieldsMustWipe } from "@/lib/bkf/login-fields";
 
-/** Único e-mail que pode virar o 1º admin sem convite (bootstrap). */
+/**
+ * Só para seed do 1º admin (sem convite) e backfill de role legado.
+ * Acesso no dia a dia = role no doc bkf_operators, não este e-mail.
+ */
 export const BKF_BOOTSTRAP_EMAIL = "gadget.apps.technology@gmail.com";
 
 export const BKF_SESSION_KEY = "gat_intranet_demo";
 const SESSION_TTL_MS = 15 * 60 * 1000;
+
+export type BkfRole = "admin" | "operator";
 
 export type BkfOperator = {
   uid: string;
   email: string;
   displayName: string;
   active: boolean;
+  role: BkfRole;
   createdAt: string;
 };
 
 export type BkfInvite = {
   email: string;
   status: "pending" | "accepted" | "revoked";
+  role: BkfRole;
   invitedByEmail: string;
   createdAt: string;
 };
@@ -36,6 +44,7 @@ export type BkfInvite = {
 type BkfSession = {
   email: string;
   uid: string;
+  role: BkfRole;
   okAt: number;
 };
 
@@ -60,6 +69,20 @@ export function isBootstrapEmail(email: string | null | undefined): boolean {
   return normalizeEmail(email ?? "") === BKF_BOOTSTRAP_EMAIL;
 }
 
+export function parseBkfRole(raw: unknown): BkfRole | null {
+  if (raw === "admin" || raw === "operator") return raw;
+  return null;
+}
+
+export function roleLabel(role: BkfRole): string {
+  return role === "admin" ? "Admin" : "Operador";
+}
+
+/** Admin pelo cache de sessão (após ensureBkfSession). */
+export function isBkfAdminSession(): boolean {
+  return readBkfSession()?.role === "admin";
+}
+
 export function readBkfSession(): BkfSession | null {
   if (typeof window === "undefined") return null;
   try {
@@ -67,9 +90,11 @@ export function readBkfSession(): BkfSession | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<BkfSession>;
     if (!parsed.uid || !parsed.email) return null;
+    const role = parseBkfRole(parsed.role) ?? "operator";
     return {
       email: String(parsed.email),
       uid: String(parsed.uid),
+      role,
       okAt: Number(parsed.okAt ?? 0),
     };
   } catch {
@@ -77,12 +102,17 @@ export function readBkfSession(): BkfSession | null {
   }
 }
 
-export function writeBkfSession(email: string, uid: string): void {
+export function writeBkfSession(
+  email: string,
+  uid: string,
+  role: BkfRole,
+): void {
   sessionStorage.setItem(
     BKF_SESSION_KEY,
     JSON.stringify({
       email: normalizeEmail(email),
       uid,
+      role,
       okAt: Date.now(),
     } satisfies BkfSession),
   );
@@ -90,12 +120,55 @@ export function writeBkfSession(email: string, uid: string): void {
 
 export function clearBkfSession(): void {
   sessionStorage.removeItem(BKF_SESSION_KEY);
+  markLoginFieldsMustWipe();
 }
 
-/** Gate rápido: cache de sessão → senão 1 leitura Firestore (sem write). */
+function mapOperatorDoc(
+  uid: string,
+  data: Record<string, unknown>,
+  fallbackEmail = "",
+): BkfOperator {
+  const email = String(data.email ?? fallbackEmail);
+  const explicit = parseBkfRole(data.role);
+  const role: BkfRole =
+    explicit ?? (isBootstrapEmail(email) ? "admin" : "operator");
+  return {
+    uid,
+    email,
+    displayName: String(data.displayName ?? ""),
+    active: data.active !== false,
+    role,
+    createdAt: tsToIso(data.createdAt),
+  };
+}
+
+/** Garante role no doc (legado sem campo). */
+async function ensureOperatorRoleBackfill(
+  uid: string,
+  email: string,
+  data: Record<string, unknown>,
+): Promise<BkfRole> {
+  const existing = parseBkfRole(data.role);
+  if (existing) return existing;
+  const role: BkfRole = isBootstrapEmail(email) ? "admin" : "operator";
+  try {
+    await updateDoc(doc(getAngelsCareDb(), "bkf_operators", uid), {
+      role,
+      updatedAt: serverTimestamp(),
+    });
+  } catch {
+    // Rules podem bloquear; ainda usamos o role resolvido em memória.
+  }
+  return role;
+}
+
+/** Gate rápido: cache de sessão → senão 1 leitura Firestore. */
 export async function ensureBkfSession(
   user: User,
-): Promise<{ ok: true; email: string } | { ok: false; reason: string }> {
+): Promise<
+  | { ok: true; email: string; role: BkfRole }
+  | { ok: false; reason: string }
+> {
   const email = normalizeEmail(user.email ?? "");
   if (!email) {
     return { ok: false, reason: "Sessão sem e-mail." };
@@ -107,38 +180,46 @@ export async function ensureBkfSession(
     cached.uid === user.uid &&
     Date.now() - cached.okAt < SESSION_TTL_MS
   ) {
-    return { ok: true, email: cached.email };
+    return { ok: true, email: cached.email, role: cached.role };
   }
 
-  const allowed = await hasBkfOperatorAccess(user.uid);
-  if (allowed) {
-    writeBkfSession(email, user.uid);
-    return { ok: true, email };
+  const opRef = doc(getAngelsCareDb(), "bkf_operators", user.uid);
+  const snap = await getDoc(opRef);
+  if (snap.exists()) {
+    const data = snap.data() as Record<string, unknown>;
+    if (data.active === false) {
+      return { ok: false, reason: "Seu acesso ao BKF foi desativado." };
+    }
+    const role = await ensureOperatorRoleBackfill(user.uid, email, data);
+    writeBkfSession(email, user.uid, role);
+    return { ok: true, email, role };
   }
 
   const claim = await claimBkfAccess({ uid: user.uid, email });
   if (!claim.ok) return claim;
-  writeBkfSession(email, user.uid);
-  return { ok: true, email };
+  writeBkfSession(email, user.uid, claim.role);
+  return { ok: true, email, role: claim.role };
 }
 
-/** Após Auth: vira operador se bootstrap, convite pendente ou já era operador. */
+/** Após Auth: vira operador/admin se bootstrap, convite pendente ou já era. */
 export async function claimBkfAccess(params: {
   uid: string;
   email: string;
-}): Promise<{ ok: true } | { ok: false; reason: string }> {
+}): Promise<
+  { ok: true; role: BkfRole } | { ok: false; reason: string }
+> {
   const email = normalizeEmail(params.email);
   const db = getAngelsCareDb();
   const opRef = doc(db, "bkf_operators", params.uid);
   const existing = await getDoc(opRef);
 
   if (existing.exists()) {
-    const data = existing.data();
+    const data = existing.data() as Record<string, unknown>;
     if (data.active === false) {
       return { ok: false, reason: "Seu acesso ao BKF foi desativado." };
     }
-    // Sem write a cada login — só valida.
-    return { ok: true };
+    const role = await ensureOperatorRoleBackfill(params.uid, email, data);
+    return { ok: true, role };
   }
 
   const inviteRef = doc(db, "bkf_invites", email);
@@ -155,10 +236,18 @@ export async function claimBkfAccess(params: {
     };
   }
 
+  let role: BkfRole = "operator";
+  if (invited) {
+    role = parseBkfRole(inviteSnap.data()?.role) ?? "operator";
+  } else if (bootstrap) {
+    role = "admin";
+  }
+
   await setDoc(opRef, {
     email,
     displayName: "",
     active: true,
+    role,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -171,7 +260,7 @@ export async function claimBkfAccess(params: {
     });
   }
 
-  return { ok: true };
+  return { ok: true, role };
 }
 
 export async function hasBkfOperatorAccess(uid: string): Promise<boolean> {
@@ -179,24 +268,43 @@ export async function hasBkfOperatorAccess(uid: string): Promise<boolean> {
   return snap.exists() && snap.data()?.active !== false;
 }
 
+export async function getMyBkfRole(): Promise<BkfRole | null> {
+  const session = readBkfSession();
+  if (session?.role) return session.role;
+  const uid = getAngelsCareAuth().currentUser?.uid;
+  const email = getAngelsCareAuth().currentUser?.email ?? "";
+  if (!uid) return null;
+  const snap = await getDoc(doc(getAngelsCareDb(), "bkf_operators", uid));
+  if (!snap.exists() || snap.data()?.active === false) return null;
+  return ensureOperatorRoleBackfill(
+    uid,
+    normalizeEmail(email),
+    snap.data() as Record<string, unknown>,
+  );
+}
+
 export async function getOperatorProfile(uid: string): Promise<{
   email: string;
   displayName: string;
   hasPersonalizedName: boolean;
+  role: BkfRole;
 } | null> {
   const snap = await getDoc(doc(getAngelsCareDb(), "bkf_operators", uid));
   if (!snap.exists() || snap.data()?.active === false) return null;
-  const data = snap.data();
+  const data = snap.data() as Record<string, unknown>;
   const email = String(data.email ?? "");
   const displayName = String(data.displayName ?? "").trim();
+  const role =
+    parseBkfRole(data.role) ??
+    (isBootstrapEmail(email) ? "admin" : "operator");
   return {
     email,
     displayName,
     hasPersonalizedName: isPersonalizedDisplayName(displayName, email),
+    role,
   };
 }
 
-/** Nome escolhido pelo atendente — nunca o trecho do e-mail. */
 export function isPersonalizedDisplayName(
   displayName: string | null | undefined,
   email?: string | null,
@@ -232,7 +340,6 @@ export async function updateMyDisplayName(displayName: string): Promise<void> {
   });
 }
 
-/** Saudação automática ao iniciar atendimento. */
 export function buildAttendanceGreeting(attendantName: string): string {
   const name = attendantName.trim();
   if (!isPersonalizedDisplayName(name)) {
@@ -244,20 +351,32 @@ export function buildAttendanceGreeting(attendantName: string): string {
   );
 }
 
-export async function createInvite(emailRaw: string): Promise<void> {
+async function assertCurrentIsAdmin(): Promise<void> {
+  const role = await getMyBkfRole();
+  if (role !== "admin") {
+    throw new Error("Somente administradores do BKF podem fazer isso.");
+  }
+}
+
+export async function createInvite(
+  emailRaw: string,
+  role: BkfRole = "operator",
+): Promise<void> {
   const auth = getAngelsCareAuth();
   const user = auth.currentUser;
   if (!user?.email) throw new Error("Sessão inválida.");
-  if (!isBootstrapEmail(user.email)) {
-    throw new Error("Somente o administrador pode convidar colaboradores.");
-  }
+  await assertCurrentIsAdmin();
 
   const email = normalizeEmail(emailRaw);
   if (!email.includes("@")) throw new Error("E-mail inválido.");
+  if (role !== "admin" && role !== "operator") {
+    throw new Error("Perfil inválido. Use Admin ou Operador.");
+  }
 
   const db = getAngelsCareDb();
   await setDoc(doc(db, "bkf_invites", email), {
     email,
+    role,
     status: "pending",
     invitedByEmail: normalizeEmail(user.email),
     invitedByUid: user.uid,
@@ -267,10 +386,7 @@ export async function createInvite(emailRaw: string): Promise<void> {
 }
 
 export async function revokeInvite(emailRaw: string): Promise<void> {
-  const auth = getAngelsCareAuth();
-  if (!isBootstrapEmail(auth.currentUser?.email)) {
-    throw new Error("Somente o administrador pode revogar convites.");
-  }
+  await assertCurrentIsAdmin();
   const email = normalizeEmail(emailRaw);
   await updateDoc(doc(getAngelsCareDb(), "bkf_invites", email), {
     status: "revoked",
@@ -282,12 +398,27 @@ export async function setOperatorActive(
   uid: string,
   active: boolean,
 ): Promise<void> {
-  const auth = getAngelsCareAuth();
-  if (!isBootstrapEmail(auth.currentUser?.email)) {
-    throw new Error("Somente o administrador pode ativar ou desativar operadores.");
-  }
+  await assertCurrentIsAdmin();
   await updateDoc(doc(getAngelsCareDb(), "bkf_operators", uid), {
     active,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function setOperatorRole(
+  uid: string,
+  role: BkfRole,
+): Promise<void> {
+  await assertCurrentIsAdmin();
+  if (role !== "admin" && role !== "operator") {
+    throw new Error("Perfil inválido.");
+  }
+  const me = getAngelsCareAuth().currentUser?.uid;
+  if (me && me === uid && role !== "admin") {
+    throw new Error("Você não pode remover o próprio perfil Admin.");
+  }
+  await updateDoc(doc(getAngelsCareDb(), "bkf_operators", uid), {
+    role,
     updatedAt: serverTimestamp(),
   });
 }
@@ -303,8 +434,9 @@ export function watchOperators(
     return () => undefined;
   }
 
-  // Admin: lista completa. Demais: só o próprio documento (regra Firestore).
-  if (!isBootstrapEmail(user.email)) {
+  const admin = isBkfAdminSession();
+
+  if (!admin) {
     return onSnapshot(
       doc(getAngelsCareDb(), "bkf_operators", user.uid),
       (snap) => {
@@ -312,15 +444,12 @@ export function watchOperators(
           onChange([]);
           return;
         }
-        const data = snap.data();
         onChange([
-          {
-            uid: snap.id,
-            email: String(data.email ?? user.email ?? ""),
-            displayName: String(data.displayName ?? ""),
-            active: data.active !== false,
-            createdAt: tsToIso(data.createdAt),
-          },
+          mapOperatorDoc(
+            snap.id,
+            snap.data() as Record<string, unknown>,
+            user.email ?? "",
+          ),
         ]);
       },
       (err) => onError?.(err),
@@ -330,16 +459,9 @@ export function watchOperators(
   return onSnapshot(
     collection(getAngelsCareDb(), "bkf_operators"),
     (snap) => {
-      const list = snap.docs.map((d) => {
-        const data = d.data();
-        return {
-          uid: d.id,
-          email: String(data.email ?? ""),
-          displayName: String(data.displayName ?? ""),
-          active: data.active !== false,
-          createdAt: tsToIso(data.createdAt),
-        };
-      });
+      const list = snap.docs.map((d) =>
+        mapOperatorDoc(d.id, d.data() as Record<string, unknown>),
+      );
       list.sort((a, b) => a.email.localeCompare(b.email));
       onChange(list);
     },
@@ -359,6 +481,7 @@ export function watchInvites(
         return {
           email: String(data.email ?? d.id),
           status: (data.status as BkfInvite["status"]) ?? "pending",
+          role: parseBkfRole(data.role) ?? "operator",
           invitedByEmail: String(data.invitedByEmail ?? ""),
           createdAt: tsToIso(data.createdAt),
         };
@@ -373,7 +496,6 @@ export function watchInvites(
   );
 }
 
-/** Lista convites (fallback one-shot). */
 export async function listPendingInvites(): Promise<BkfInvite[]> {
   const snap = await getDocs(collection(getAngelsCareDb(), "bkf_invites"));
   return snap.docs
@@ -382,6 +504,7 @@ export async function listPendingInvites(): Promise<BkfInvite[]> {
       return {
         email: String(data.email ?? d.id),
         status: (data.status as BkfInvite["status"]) ?? "pending",
+        role: parseBkfRole(data.role) ?? "operator",
         invitedByEmail: String(data.invitedByEmail ?? ""),
         createdAt: tsToIso(data.createdAt),
       };

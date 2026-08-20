@@ -9,7 +9,7 @@ import {
   clearSeedModerationReports,
   seedModerationReports,
 } from "@/lib/bkf/seed-reports";
-import { isBootstrapEmail } from "@/lib/bkf/operators";
+import { isBkfAdminSession } from "@/lib/bkf/operators";
 import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
 
 export function MocksModule() {
@@ -21,7 +21,7 @@ export function MocksModule() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    setIsAdmin(isBootstrapEmail(getAngelsCareAuth().currentUser?.email));
+    setIsAdmin(isBkfAdminSession());
   }, []);
 
   async function onSeedTickets() {

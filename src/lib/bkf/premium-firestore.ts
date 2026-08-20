@@ -101,8 +101,8 @@ function mapRole(raw: unknown): string {
   const role = String(raw ?? "").trim();
   if (role === "Contratante") return "Contratante";
   if (role === "Assistido") return "Assistido";
-  if (role === "Cuidador" || role.toLowerCase().includes("cuidador")) {
-    return "Cuidador (Profissional)";
+  if (role === "Cuidador" || role.toLowerCase().includes("cuidador") || role.toLowerCase().includes("profissional")) {
+    return "Profissional";
   }
   return role || "—";
 }

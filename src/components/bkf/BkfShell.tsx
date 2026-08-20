@@ -14,7 +14,6 @@ import {
 import {
   clearBkfSession,
   ensureBkfSession,
-  isBootstrapEmail,
 } from "@/lib/bkf/operators";
 import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
 
@@ -38,8 +37,7 @@ export function BkfShell({ app, children }: Props) {
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
   const [email, setEmail] = useState("colaborador");
-
-  const isAdmin = isBootstrapEmail(email);
+  const [isAdmin, setIsAdmin] = useState(false);
   const base = `/intranet/bkf/apps/${app.appId}`;
   const visibleModules = useMemo(() => modulesForRole(isAdmin), [isAdmin]);
 
@@ -57,6 +55,7 @@ export function BkfShell({ app, children }: Props) {
         return;
       }
       setEmail(gate.email);
+      setIsAdmin(gate.role === "admin");
       setReady(true);
     });
     return () => unsub();

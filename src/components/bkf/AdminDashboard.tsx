@@ -198,7 +198,7 @@ export function AdminDashboard({ appId }: Props) {
           <KpiStrip
             loading={!ready}
             items={[
-              { label: "Na amostra", value: data?.users.total ?? 0 },
+              { label: "Total", value: data?.users.total ?? 0 },
               {
                 label: "Ativos",
                 value: data?.users.active ?? 0,

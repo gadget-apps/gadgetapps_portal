@@ -2,17 +2,27 @@ import {
   collection,
   doc,
   deleteField,
+  documentId,
   getDocs,
   limit,
   orderBy,
   query,
   serverTimestamp,
+  startAfter,
   updateDoc,
+  type Query,
+  type QueryDocumentSnapshot,
 } from "firebase/firestore";
-import { getAngelsCareAuth, getAngelsCareDb } from "@/lib/firebase/angels-care";
+import { httpsCallable } from "firebase/functions";
+import {
+  getAngelsCareAuth,
+  getAngelsCareDb,
+  getAngelsCareFunctions,
+} from "@/lib/firebase/angels-care";
 import type { BkfUser } from "@/data/bkf/mock-users";
 
-const PAGE_SIZE = 80;
+/** Lotes ao paginar a coleção users (sem teto artificial de listagem). */
+const BATCH_SIZE = 300;
 
 function tsToIso(value: unknown): string {
   if (
@@ -27,12 +37,23 @@ function tsToIso(value: unknown): string {
   return "";
 }
 
+function firstNonEmptyString(...values: unknown[]): string {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
 function mapRole(raw: unknown): BkfUser["userRole"] {
   const role = String(raw ?? "").trim();
   if (role === "Contratante") return "Contratante";
   if (role === "Assistido") return "Assistido";
-  if (role === "Cuidador" || role.toLowerCase().includes("cuidador")) {
-    return "Cuidador (Profissional)";
+  if (
+    role === "Cuidador" ||
+    role.toLowerCase().includes("cuidador") ||
+    role.toLowerCase() === "profissional"
+  ) {
+    return "Profissional";
   }
   return "Contratante";
 }
@@ -71,12 +92,24 @@ export function mapUserDoc(
     tsToIso(data.createdAt) ||
     new Date().toISOString();
 
+  const email = firstNonEmptyString(
+    data.email,
+    data.normalizedEmail,
+    data.mail,
+  );
+  const storedName = firstNonEmptyString(
+    data.name,
+    data.fullName,
+    data.displayName,
+  );
+  const userRole = mapRole(data.userRole);
+
   return {
     id,
-    displayName: String(data.name ?? "Usuário"),
-    email: String(data.email ?? ""),
+    displayName: storedName || email || "Usuário",
+    email,
     phone: data.phone ? String(data.phone) : undefined,
-    userRole: mapRole(data.userRole),
+    userRole,
     isPremium: isPremiumEffective(data),
     premiumUntil: premiumUntil ? premiumUntil.slice(0, 10) : undefined,
     premiumProductId: data.premiumProductId
@@ -93,28 +126,69 @@ export function mapUserDoc(
 }
 
 /**
- * Carrega usuários em lote (sem listener pesado na coleção inteira).
- * Sem índice: fallback para get sem orderBy.
+ * Lê a coleção users paginada (sem teto artificial).
  */
-export async function loadAppUsers(): Promise<BkfUser[]> {
+async function fetchAllUserDocs(): Promise<BkfUser[]> {
   const db = getAngelsCareDb();
   const col = collection(db, "users");
+  const list: BkfUser[] = [];
+  let cursor: QueryDocumentSnapshot | null = null;
+
+  for (;;) {
+    const q: Query = cursor
+      ? query(
+          col,
+          orderBy(documentId()),
+          startAfter(cursor),
+          limit(BATCH_SIZE),
+        )
+      : query(col, orderBy(documentId()), limit(BATCH_SIZE));
+
+    const snap = await getDocs(q);
+    for (const d of snap.docs) {
+      list.push(mapUserDoc(d.id, d.data() as Record<string, unknown>));
+    }
+    if (snap.size < BATCH_SIZE) break;
+    cursor = snap.docs[snap.docs.length - 1] ?? null;
+    if (!cursor) break;
+  }
+
+  list.sort((a, b) => a.displayName.localeCompare(b.displayName, "pt-BR"));
+  return list;
+}
+
+/**
+ * Completa e-mails ausentes no Firestore a partir do Firebase Auth (admin BKF).
+ */
+export async function syncUserEmailsFromAuth(): Promise<{
+  updated: number;
+}> {
+  const fn = httpsCallable(getAngelsCareFunctions(), "syncUserEmailsFromAuth");
+  const res = await fn({});
+  const data = (res.data ?? {}) as { updated?: number };
+  return { updated: Number(data.updated ?? 0) };
+}
+
+/**
+ * Carrega **todos** os usuários.
+ * Se algum perfil estiver sem e-mail (comum vs Auth), sincroniza Auth → Firestore
+ * e recarrega — por isso contratante@gmail.com passa a aparecer.
+ */
+export async function loadAppUsers(): Promise<BkfUser[]> {
+  let list = await fetchAllUserDocs();
+  const missingEmail = list.some((u) => !u.email);
+  if (!missingEmail) return list;
 
   try {
-    const snap = await getDocs(
-      query(col, orderBy("name"), limit(PAGE_SIZE)),
-    );
-    return snap.docs.map((d) =>
-      mapUserDoc(d.id, d.data() as Record<string, unknown>),
-    );
+    const { updated } = await syncUserEmailsFromAuth();
+    if (updated > 0) {
+      list = await fetchAllUserDocs();
+    }
   } catch {
-    const snap = await getDocs(query(col, limit(PAGE_SIZE)));
-    const list = snap.docs.map((d) =>
-      mapUserDoc(d.id, d.data() as Record<string, unknown>),
-    );
-    list.sort((a, b) => a.displayName.localeCompare(b.displayName, "pt-BR"));
-    return list;
+    // Operador sem permissão ou Function indisponível — mantém lista parcial.
   }
+
+  return list;
 }
 
 export async function setUserDisabledByAdmin(
