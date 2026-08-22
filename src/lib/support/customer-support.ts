@@ -59,7 +59,6 @@ function displayNameFromUser(user: User, profileName?: string): string {
   return "Usuário";
 }
 
-/** Lê perfil do app e bloqueia conta desativada no BKF. */
 export async function assertCustomerAllowed(user: User): Promise<{
   displayName: string;
   email: string;
@@ -103,14 +102,16 @@ export async function signOutCustomer(): Promise<void> {
   await signOut(getAngelsCareAuth());
 }
 
-/** Flag síncrono: o signOut do Firebase pode não terminar antes da navegação. */
+// Flag síncrono: o signOut do Firebase pode não terminar antes da navegação.
+// Synchronous flag: Firebase signOut may not finish before navigation.
 export const SUPPORT_FORCE_LOGOUT_KEY = "ga_support_force_logout";
 
 export function markCustomerSupportLeft(): void {
   try {
     sessionStorage.setItem(SUPPORT_FORCE_LOGOUT_KEY, "1");
   } catch {
-    /* private mode / blocked storage */
+    // Modo privado / storage bloqueado: a flag de logout do /suporte pode não persistir.
+    // Private mode / blocked storage: the /suporte logout flag may not persist.
   }
 }
 

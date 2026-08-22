@@ -34,7 +34,6 @@ export function chartTotal(items: DashChartItem[]): number {
   return items.reduce((sum, i) => sum + (i.value || 0), 0);
 }
 
-/** Texto do hint: "Urgente: 6 (32%)" */
 export function pointHint(
   label: string,
   value: number,
@@ -57,7 +56,6 @@ export function polarToCartesian(
   };
 }
 
-/** Arco SVG para fatia de donut (ângulo em graus, 0 = topo). */
 export function donutSlicePath(
   cx: number,
   cy: number,

@@ -2,6 +2,7 @@ import {
   addDoc,
   collection,
   doc,
+  getDoc,
   onSnapshot,
   orderBy,
   query,
@@ -53,7 +54,7 @@ export function mapThreadDoc(
   const preview = String(data.lastMessageText ?? "").trim();
   return {
     id,
-    appId: String(data.appId ?? "angels_care"),
+    appId: String(data.appId ?? ""),
     userId: String(data.userId ?? id),
     userName: String(data.userName ?? "Usuário"),
     userEmail: String(data.userEmail ?? ""),
@@ -67,6 +68,13 @@ export function mapThreadDoc(
     unreadForStaff: Number(data.unreadForStaff ?? 0) || 0,
     createdAt: tsToIso(data.createdAt),
     lastMessageAt: tsToIso(data.lastMessageAt ?? data.updatedAt ?? data.createdAt),
+    resolvedAt: data.resolvedAt ? tsToIso(data.resolvedAt) : undefined,
+    firstStaffReplyAt: data.firstStaffReplyAt
+      ? tsToIso(data.firstStaffReplyAt)
+      : undefined,
+    resolutionCodes: Array.isArray(data.resolutionCodes)
+      ? data.resolutionCodes.map(String)
+      : [],
     messages: [],
   };
 }
@@ -147,6 +155,10 @@ export async function updateThreadMeta(
     priority: TicketPriority;
     assigneeEmail: string | null;
     unreadForStaff: number;
+    resolvedAt: ReturnType<typeof serverTimestamp> | null;
+    firstStaffReplyAt: ReturnType<typeof serverTimestamp>;
+    resolutionCodes: string[];
+    reviewNote: string;
   }>,
 ): Promise<void> {
   const db = getAngelsCareDb();
@@ -192,14 +204,20 @@ export async function sendStaffReply(params: {
     isEdited: false,
   });
 
-  await updateDoc(threadRef, {
+  const threadSnap = await getDoc(threadRef);
+  const existing = threadSnap.data() || {};
+  const threadPatch: Record<string, unknown> = {
     status: "assigned",
     assigneeEmail: params.operatorEmail,
     lastMessageAt: serverTimestamp(),
     lastMessageText: trimmed,
     unreadForStaff: 0,
     updatedAt: serverTimestamp(),
-  });
+  };
+  if (!existing.firstStaffReplyAt) {
+    threadPatch.firstStaffReplyAt = serverTimestamp();
+  }
+  await updateDoc(threadRef, threadPatch);
 }
 
 export async function editStaffMessage(params: {

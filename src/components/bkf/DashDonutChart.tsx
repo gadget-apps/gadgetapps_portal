@@ -15,7 +15,6 @@ type Props = {
   emptyLabel?: string;
 };
 
-/** Donut + legenda — boa para composição (partes de um todo). */
 export function DashDonutChart({
   title,
   items,
@@ -77,7 +76,6 @@ export function DashDonutChart({
               />
               {arcs.map((arc) => {
                 if (arc.value <= 0) return null;
-                // Fatia completa (100%) vira círculo cheio.
                 if (arc.end - arc.start >= 359.9) {
                   return (
                     <circle

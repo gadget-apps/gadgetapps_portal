@@ -1,4 +1,3 @@
-/** Composição visual do hero — geometria editorial (sem stock genérico). */
 export function HeroVisual() {
   return (
     <div

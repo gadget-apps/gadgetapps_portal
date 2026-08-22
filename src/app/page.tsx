@@ -229,6 +229,18 @@ export default function HomePage() {
                 </div>
                 <span className="bento__cta">Abrir chat →</span>
               </Link>
+
+              <Link href="/ouvidoria/" className="bento__cell">
+                <div>
+                  <p className="bento__kicker">Ouvidoria</p>
+                  <h3 className="bento__title">Ouvidoria</h3>
+                  <p className="bento__text">
+                    Reclamações, sugestões e elogios. Sem login; a equipe é
+                    avisada na hora.
+                  </p>
+                </div>
+                <span className="bento__cta">Abrir formulário →</span>
+              </Link>
             </div>
           </Reveal>
         </section>

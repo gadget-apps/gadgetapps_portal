@@ -33,6 +33,7 @@ export function AppOverview({ app }: Props) {
   }
 
   // Dashboard completo: somente Admin.
+  // Full dashboard: Admin only.
   if (isAdmin) {
     return <AdminDashboard appId={app.appId} />;
   }

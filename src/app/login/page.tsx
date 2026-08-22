@@ -60,12 +60,14 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
-  /** Desbloqueia digitação após montar — reduz autofill do gerenciador de senhas. */
+  // Desbloqueia digitação após montar — reduz autofill do gerenciador de senhas.
+  // Unlocks typing after mount — reduces password-manager autofill.
   const [fieldsUnlocked, setFieldsUnlocked] = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
-  /** Depois que o usuário digita, paramos de limpar (senão apaga ao trocar de aba). */
+  // Depois que o usuário digita, paramos de limpar (senão apaga ao trocar de aba).
+  // After the user types, we stop wiping (otherwise tab-switch would erase the fields).
   const userEditedRef = useRef(false);
   const wipeWindowActiveRef = useRef(true);
 
@@ -97,6 +99,7 @@ export default function LoginPage() {
     setFieldsUnlocked(false);
 
     // Autofill do Chrome costuma preencher depois do paint.
+    // Chrome autofill often fills after paint.
     const timers = [0, 50, 150, 400, 1000].map((ms) =>
       window.setTimeout(() => {
         if (!wipeWindowActiveRef.current) return;
@@ -106,7 +109,8 @@ export default function LoginPage() {
       }, ms),
     );
 
-    // Volta via bfcache / histórico: campos devem nascer vazios de novo.
+    // Volta via bfcache / histórico: os campos devem nascer vazios de novo.
+    // Return via bfcache / history: fields must start empty again.
     const onPageShow = (event: PageTransitionEvent) => {
       if (event.persisted || wipeWindowActiveRef.current) {
         userEditedRef.current = false;
@@ -184,7 +188,8 @@ export default function LoginPage() {
       const userEmail = (cred.user.email ?? trimmedEmail).toLowerCase();
       await finishAccess(cred.user.uid, userEmail);
     } catch (err) {
-      // Após tentativa: limpa senha; e-mail some também para não reaparecer “salvo”.
+      // Após tentativa: limpa senha; o e-mail some também para não reaparecer “salvo”.
+      // After an attempt: clear the password; email is cleared too so a “saved” value does not return.
       userEditedRef.current = false;
       wipeCredentials(true);
       setError(mapAuthError(err));
@@ -279,7 +284,8 @@ export default function LoginPage() {
             border: "1px solid var(--line)",
           }}
         >
-          {/* Honeypot: despista gerenciadores de senha que varrem o 1º email/password. */}
+          {/* Honeypot: despista gerenciadores de senha que varrem o 1º email/password.
+              Honeypot: diverts password managers that scan the first email/password fields. */}
           <input
             type="text"
             name="intranet_username_trap"

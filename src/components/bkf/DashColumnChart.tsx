@@ -14,7 +14,6 @@ type Props = {
   emptyLabel?: string;
 };
 
-/** Barras verticais compactas — boa para comparar poucas categorias. */
 export function DashColumnChart({
   title,
   items,

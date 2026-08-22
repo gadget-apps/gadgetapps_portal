@@ -16,7 +16,6 @@ export const EMPTY_QUEUE_COUNTS: QueuePriorityCounts = {
   total: 0,
 };
 
-/** Pendentes = não resolvidos. Baixa entra em Normal na visão resumida. */
 export function watchPendingQueueByPriority(
   appId: string,
   onChange: (counts: QueuePriorityCounts) => void,
@@ -46,7 +45,7 @@ export function watchPendingQueueByPriority(
         counts.total += 1;
         if (ticket.priority === "urgent") counts.urgent += 1;
         else if (ticket.priority === "high") counts.high += 1;
-        else counts.normal += 1; // normal + low
+        else counts.normal += 1;
       }
 
       onChange(counts);

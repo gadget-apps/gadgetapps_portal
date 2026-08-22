@@ -21,7 +21,6 @@ import {
 } from "@/lib/firebase/angels-care";
 import type { BkfUser } from "@/data/bkf/mock-users";
 
-/** Lotes ao paginar a coleção users (sem teto artificial de listagem). */
 const BATCH_SIZE = 300;
 
 function tsToIso(value: unknown): string {
@@ -125,9 +124,6 @@ export function mapUserDoc(
   };
 }
 
-/**
- * Lê a coleção users paginada (sem teto artificial).
- */
 async function fetchAllUserDocs(): Promise<BkfUser[]> {
   const db = getAngelsCareDb();
   const col = collection(db, "users");
@@ -157,9 +153,6 @@ async function fetchAllUserDocs(): Promise<BkfUser[]> {
   return list;
 }
 
-/**
- * Completa e-mails ausentes no Firestore a partir do Firebase Auth (admin BKF).
- */
 export async function syncUserEmailsFromAuth(): Promise<{
   updated: number;
 }> {
@@ -169,11 +162,6 @@ export async function syncUserEmailsFromAuth(): Promise<{
   return { updated: Number(data.updated ?? 0) };
 }
 
-/**
- * Carrega **todos** os usuários.
- * Se algum perfil estiver sem e-mail (comum vs Auth), sincroniza Auth → Firestore
- * e recarrega — por isso contratante@gmail.com passa a aparecer.
- */
 export async function loadAppUsers(): Promise<BkfUser[]> {
   let list = await fetchAllUserDocs();
   const missingEmail = list.some((u) => !u.email);
@@ -185,7 +173,8 @@ export async function loadAppUsers(): Promise<BkfUser[]> {
       list = await fetchAllUserDocs();
     }
   } catch {
-    // Operador sem permissão ou Function indisponível — mantém lista parcial.
+    // Operador sem permissão ou Function indisponível — mantém a lista parcial.
+    // Operator lacks permission or the Function is unavailable — keep the partial list.
   }
 
   return list;

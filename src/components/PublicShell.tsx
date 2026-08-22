@@ -38,6 +38,9 @@ export function SiteHeader({ on = "page" }: { on?: "hero" | "page" }) {
           <Link href="/suporte/" className="nav-link">
             Suporte
           </Link>
+          <Link href="/ouvidoria/" className="nav-link">
+            Ouvidoria
+          </Link>
           <Link
             href="/login/"
             className={`pill ${on === "hero" && !scrolled ? "pill-light" : "pill-dark"}`}
@@ -56,6 +59,10 @@ export function SiteFooter() {
       <div className="footer__inner">
         <p className="footer__meta">
           © {new Date().getFullYear()} · gadgetapps-portal.web.app
+          {" · "}
+          <Link href="/ouvidoria/" style={{ color: "inherit" }}>
+            Ouvidoria
+          </Link>
         </p>
       </div>
     </footer>

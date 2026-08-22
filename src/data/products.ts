@@ -1,15 +1,9 @@
-/**
- * Produtos públicos da Gadget Apps Technology (site institucional).
- * O site oficial de cada app continua separado; aqui só apresentamos e linkamos.
- */
 export type PublicProduct = {
   slug: string;
   name: string;
   tagline: string;
   description: string;
-  /** Site oficial do produto (pode ser outro hosting) */
   officialSiteUrl: string;
-  /** Play Store, se houver */
   playStoreUrl?: string;
   status: "live" | "coming_soon";
   accentColor: string;

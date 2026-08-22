@@ -2,6 +2,12 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
+import { serverTimestamp } from "firebase/firestore";
+import { getAppById } from "@/data/apps";
+import {
+  CHAT_RESOLUTION_PRESETS,
+  presetsForDisplay,
+} from "@/lib/bkf/resolution-codes";
 import {
   supportMacrosFor,
   priorityLabel,
@@ -40,6 +46,8 @@ type QueueFilter = "all" | TicketStatus;
 const DEMO_FLAG = "gat_intranet_demo";
 
 export function ChatQueueModule({ appId }: Props) {
+  const appName = getAppById(appId)?.name || appId;
+  const chatPresets = presetsForDisplay(CHAT_RESOLUTION_PRESETS, appName);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [filter, setFilter] = useState<QueueFilter>("all");
@@ -48,6 +56,7 @@ export function ChatQueueModule({ appId }: Props) {
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [chatResolutionCodes, setChatResolutionCodes] = useState<string[]>([]);
   const [operatorEmail, setOperatorEmail] = useState("");
   const [operatorName, setOperatorName] = useState("");
   const [nameDraft, setNameDraft] = useState("");
@@ -190,7 +199,8 @@ export function ChatQueueModule({ appId }: Props) {
       try {
         await updateThreadMeta(id, { unreadForStaff: 0 });
       } catch {
-        /* listener corrige */
+        // Sem permissão de escrita, o listener Firestore reconcilia o não-lido.
+        // If write is denied, the Firestore listener reconciles unread state.
       }
     }
   }
@@ -237,7 +247,15 @@ export function ChatQueueModule({ appId }: Props) {
 
   async function setStatus(id: string, status: TicketStatus) {
     try {
-      await updateThreadMeta(id, { status });
+      const patch: Parameters<typeof updateThreadMeta>[1] = { status };
+      if (status === "resolved") {
+        patch.resolvedAt = serverTimestamp();
+        patch.resolutionCodes = chatResolutionCodes;
+      }
+      await updateThreadMeta(id, patch);
+      if (status !== "resolved") {
+        setChatResolutionCodes([]);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Falha ao mudar status.");
     }
@@ -504,19 +522,40 @@ export function ChatQueueModule({ appId }: Props) {
                   >
                     Iniciar atendimento
                   </button>
-                  <select
-                    className="bkf-input"
-                    style={{ width: "auto", padding: "0.35rem 0.55rem" }}
-                    value={selected.status}
-                    onChange={(e) =>
-                      setStatus(selected.id, e.target.value as TicketStatus)
-                    }
-                  >
-                    <option value="open">Novo</option>
-                    <option value="assigned">Em atendimento</option>
-                    <option value="pending">Aguardando</option>
-                    <option value="resolved">Resolvido</option>
-                  </select>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                    <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+                      {chatPresets.map((preset) => (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          className={`bkf-chip ${chatResolutionCodes.includes(preset.id) ? "is-on" : ""}`}
+                          onClick={() =>
+                            setChatResolutionCodes((prev) =>
+                              prev.includes(preset.id)
+                                ? prev.filter((id) => id !== preset.id)
+                                : [...prev, preset.id],
+                            )
+                          }
+                          title={preset.text}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                    <select
+                      className="bkf-input"
+                      style={{ width: "auto", padding: "0.35rem 0.55rem" }}
+                      value={selected.status}
+                      onChange={(e) =>
+                        setStatus(selected.id, e.target.value as TicketStatus)
+                      }
+                    >
+                      <option value="open">Novo</option>
+                      <option value="assigned">Em atendimento</option>
+                      <option value="pending">Aguardando</option>
+                      <option value="resolved">Resolvido</option>
+                    </select>
+                  </div>
                   <select
                     className="bkf-input"
                     style={{ width: "auto", padding: "0.35rem 0.55rem" }}

@@ -3,7 +3,8 @@ export const BKF_MODULES = [
     id: "chat",
     title: "Chat / fila",
     description: "Atendimento suporte ↔ usuário e fila com atribuição.",
-    /** false = operadores e admin */
+    // false = operadores e admin veem o módulo; true = só admin.
+    // false = operators and admin see the module; true = admin only.
     adminOnly: false,
   },
   {
@@ -28,6 +29,19 @@ export const BKF_MODULES = [
     id: "reports",
     title: "Denúncias",
     description: "Fila de denúncias originadas no chat do app.",
+    adminOnly: true,
+  },
+  {
+    id: "ouvidoria",
+    title: "Ouvidoria",
+    description: "Elogios, sugestões e reclamações do site e do app.",
+    adminOnly: true,
+  },
+  {
+    id: "kpis",
+    title: "KPIs e SLAs",
+    description:
+      "Volume, tempo de encerramento e códigos de tratativa (white-label por app).",
     adminOnly: true,
   },
   {
@@ -68,7 +82,6 @@ export function isAdminOnlyModule(id: string): boolean {
   return mod?.adminOnly === true;
 }
 
-/** Módulos visíveis no menu conforme perfil. */
 export function modulesForRole(isAdmin: boolean) {
   return BKF_MODULES.filter((m) => isAdmin || !m.adminOnly);
 }

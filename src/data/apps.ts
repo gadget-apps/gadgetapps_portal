@@ -1,21 +1,13 @@
-/**
- * Catálogo de apps operados pelo backoffice.
- * Por enquanto é uma lista fixa no código.
- * Depois isso vai para o Firebase do hub (escritório).
- */
 export type AppStatus = "active" | "inactive" | "coming_soon";
 
 export type CatalogApp = {
-  /** Identificador interno — nunca muda (ex.: angels_care) */
+  // Identificador interno estável para isolamento white-label (ex.: angels_care); nunca mudar.
+  // Stable internal id for white-label isolation (e.g. angels_care); never change.
   appId: string;
-  /** Nome exibido na tela */
   name: string;
-  /** Texto curto do que o produto faz */
   description: string;
-  /** Projeto Firebase do produto (cofre dos dados) */
   firebaseProjectId: string;
   status: AppStatus;
-  /** Cor de destaque no card (hex) */
   accentColor: string;
 };
 

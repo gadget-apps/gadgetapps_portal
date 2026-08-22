@@ -13,10 +13,8 @@ import type { User } from "firebase/auth";
 import { getAngelsCareAuth, getAngelsCareDb } from "@/lib/firebase/angels-care";
 import { markLoginFieldsMustWipe } from "@/lib/bkf/login-fields";
 
-/**
- * Só para seed do 1º admin (sem convite) e backfill de role legado.
- * Acesso no dia a dia = role no doc bkf_operators, não este e-mail.
- */
+// Só para seed do 1º admin (sem convite) e backfill de role legado. Acesso no dia a dia = role no doc bkf_operators, não este e-mail.
+// Only for seeding the first admin (no invite) and legacy role backfill. Day-to-day access = role on the bkf_operators doc, not this email.
 export const BKF_BOOTSTRAP_EMAIL = "gadget.apps.technology@gmail.com";
 
 export const BKF_SESSION_KEY = "gat_intranet_demo";
@@ -78,7 +76,6 @@ export function roleLabel(role: BkfRole): string {
   return role === "admin" ? "Admin" : "Operador";
 }
 
-/** Admin pelo cache de sessão (após ensureBkfSession). */
 export function isBkfAdminSession(): boolean {
   return readBkfSession()?.role === "admin";
 }
@@ -142,7 +139,6 @@ function mapOperatorDoc(
   };
 }
 
-/** Garante role no doc (legado sem campo). */
 async function ensureOperatorRoleBackfill(
   uid: string,
   email: string,
@@ -157,12 +153,12 @@ async function ensureOperatorRoleBackfill(
       updatedAt: serverTimestamp(),
     });
   } catch {
-    // Rules podem bloquear; ainda usamos o role resolvido em memória.
+    // Rules podem bloquear a gravação; o role resolvido em memória ainda vale.
+    // Rules may block the write; the in-memory resolved role still applies.
   }
   return role;
 }
 
-/** Gate rápido: cache de sessão → senão 1 leitura Firestore. */
 export async function ensureBkfSession(
   user: User,
 ): Promise<
@@ -201,7 +197,6 @@ export async function ensureBkfSession(
   return { ok: true, email, role: claim.role };
 }
 
-/** Após Auth: vira operador/admin se bootstrap, convite pendente ou já era. */
 export async function claimBkfAccess(params: {
   uid: string;
   email: string;

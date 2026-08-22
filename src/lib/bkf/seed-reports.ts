@@ -45,7 +45,6 @@ const LAST_NAMES = [
   "Martins",
 ];
 
-/** Mesmos motivos do chat no app. */
 const REASONS = [
   "Assédio ou comportamento inadequado",
   "Spam ou golpe",
@@ -81,10 +80,8 @@ function person(n: number, stamp: number, role: "rep" | "tgt") {
   return { name, uid, email };
 }
 
-/**
- * Denúncias sintéticas em moderation_reports (isSeed: true).
- * Não cria usuários reais — só docs para testar a fila BKF.
- */
+// Denúncias sintéticas em moderation_reports (isSeed: true). Não cria usuários reais — só docs para testar a fila BKF.
+// Synthetic reports in moderation_reports (isSeed: true). Does not create real users — docs only to test the BKF queue.
 export async function seedModerationReports(count = 15): Promise<number> {
   const auth = getAngelsCareAuth();
   if (!auth.currentUser) throw new Error("Faça login no BKF.");

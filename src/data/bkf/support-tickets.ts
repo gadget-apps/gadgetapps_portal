@@ -1,8 +1,5 @@
-/**
- * Modelo do chat de atendimento (suporte ↔ usuário).
- * Isolado por appId. Depois grava no Firestore do portal (Spark),
- * sem misturar com o chat peer-to-peer do Angel's Care.
- */
+// Chat de suporte do portal isolado por appId; não misturar com o chat peer-to-peer do Angel's Care.
+// Portal support chat is isolated by appId; do not mix with Angel's Care peer-to-peer chat.
 
 export type TicketStatus = "open" | "pending" | "assigned" | "resolved";
 export type TicketPriority = "low" | "normal" | "high" | "urgent";
@@ -30,6 +27,9 @@ export type SupportTicket = {
   unreadForStaff: number;
   createdAt: string;
   lastMessageAt: string;
+  resolvedAt?: string;
+  firstStaffReplyAt?: string;
+  resolutionCodes?: string[];
   messages: SupportMessage[];
 };
 
@@ -70,7 +70,6 @@ export function supportMacrosFor(attendantName: string): {
   ];
 }
 
-/** @deprecated use supportMacrosFor */
 export const SUPPORT_MACROS = supportMacrosFor("");
 
 const SEED_ANGELS: SupportTicket[] = [

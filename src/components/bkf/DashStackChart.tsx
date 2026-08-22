@@ -14,7 +14,6 @@ type Props = {
   emptyLabel?: string;
 };
 
-/** Barra 100% empilhada — leitura rápida de proporção. */
 export function DashStackChart({
   title,
   items,

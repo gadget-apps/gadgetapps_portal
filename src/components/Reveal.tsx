@@ -13,7 +13,6 @@ type Props = {
   delayMs?: number;
 };
 
-/** Reveal on scroll — padrão de sites de referência (Intersection Observer). */
 export function Reveal({ children, className = "", delayMs = 0 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
 

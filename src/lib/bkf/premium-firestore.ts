@@ -205,9 +205,8 @@ function mapEventDoc(
   };
 }
 
-/**
- * Status atual de entitlement (users). Não é histórico de renovações.
- */
+// Status atual de entitlement em `users`. Não é histórico de renovações.
+// Current entitlement status on `users`. This is not a renewal history.
 export async function loadPremiumStatusRows(): Promise<PremiumStatusRow[]> {
   const db = getAngelsCareDb();
   const col = collection(db, "users");
@@ -221,7 +220,8 @@ export async function loadPremiumStatusRows(): Promise<PremiumStatusRow[]> {
       byId.set(d.id, mapStatusDoc(d.id, d.data() as Record<string, unknown>));
     }
   } catch {
-    // Índice ou permissão: segue com carga geral.
+    // Índice ou permissão: segue com a carga geral.
+    // Missing index or permission: continue with the general load.
   }
 
   try {
@@ -250,10 +250,8 @@ export async function loadPremiumStatusRows(): Promise<PremiumStatusRow[]> {
   return list;
 }
 
-/**
- * Ledger de eventos (novos a partir do deploy das Functions).
- * Lista vazia é esperada até haver grants/revokes após o deploy.
- */
+// Ledger de eventos (após o deploy das Functions). Lista vazia é esperada até haver grants/revokes.
+// Event ledger (after Functions deploy). An empty list is expected until grants/revokes exist.
 export async function loadPremiumEvents(): Promise<PremiumEventRow[]> {
   const db = getAngelsCareDb();
   const col = collection(db, "premium_events");

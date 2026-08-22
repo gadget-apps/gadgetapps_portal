@@ -80,6 +80,8 @@ function minutesAgo(mins: number): Timestamp {
   return Timestamp.fromDate(new Date(Date.now() - mins * 60_000));
 }
 
+// Cria tickets sintéticos (isSeed: true); não são conversas reais de usuários.
+// Creates synthetic tickets (isSeed: true); these are not real user conversations.
 export async function seedSupportTickets(count = 25): Promise<number> {
   const auth = getAngelsCareAuth();
   if (!auth.currentUser) throw new Error("Faça login no BKF.");
@@ -88,7 +90,6 @@ export async function seedSupportTickets(count = 25): Promise<number> {
   const stamp = Date.now();
   let created = 0;
 
-  // Firestore batch max 500 ops; ~1 thread + 3 msgs = 4 ops → até 100 tickets/batch.
   const batchSize = 20;
   for (let offset = 0; offset < count; offset += batchSize) {
     const batch = writeBatch(db);
@@ -188,7 +189,6 @@ export async function clearSeedSupportTickets(): Promise<number> {
   let removed = 0;
   for (const thread of snap.docs) {
     const messages = await getDocs(collection(thread.ref, "messages"));
-    // Delete messages in chunks
     let batch = writeBatch(db);
     let ops = 0;
     for (const msg of messages.docs) {
@@ -208,7 +208,6 @@ export async function clearSeedSupportTickets(): Promise<number> {
   return removed;
 }
 
-/** Garante doc seed mínimo (usado se batch setDoc avulso). */
 export async function touchSeedMarker(batchId: string): Promise<void> {
   const db = getAngelsCareDb();
   await setDoc(

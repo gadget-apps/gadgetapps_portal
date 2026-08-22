@@ -18,7 +18,6 @@ type Props = {
   title: string;
   items: DashBarItem[];
   emptyLabel?: string;
-  /** Mostra % do total ao lado do valor (padrão: true). */
   showShare?: boolean;
 };
 

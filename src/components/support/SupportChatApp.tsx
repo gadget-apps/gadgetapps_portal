@@ -70,8 +70,8 @@ export function SupportChatApp() {
     let cancelled = false;
 
     void (async () => {
-      // Sempre começa deslogado ao abrir /suporte (Angel Guide, site público, F5, etc.).
-      // Sessão Firebase persistida não deve pular a tela de login.
+      // /suporte sempre inicia deslogado (Angel Guide, site público, F5); sessão Firebase persistida não deve pular o login.
+      // /suporte must always start logged out (Angel Guide, public site, F5); a persisted Firebase session must not skip login.
       try {
         await signOutCustomer();
         clearCustomerSupportLeaveMark();
@@ -92,6 +92,7 @@ export function SupportChatApp() {
   }, []);
 
   // Sai da sessão do cliente ao deixar /suporte (link, voltar, fechar/atualizar aba).
+  // Sign the customer out when leaving /suporte (link, back, close/refresh tab).
   useEffect(() => {
     const aliveKey = "ga_support_chat_alive";
     sessionStorage.setItem(aliveKey, "1");
@@ -132,6 +133,7 @@ export function SupportChatApp() {
       sessionStorage.removeItem(aliveKey);
       markCustomerSupportLeft();
       // Atraso curto: evita logout fantasma no remount do React Strict Mode (dev).
+      // Short delay: avoids a ghost logout on React Strict Mode remount (dev).
       window.setTimeout(() => {
         if (sessionStorage.getItem(aliveKey) === "1") {
           clearCustomerSupportLeaveMark();

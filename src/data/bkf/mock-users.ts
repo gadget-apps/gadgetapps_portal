@@ -1,7 +1,5 @@
-/**
- * Dados de demonstração do BKF — espelham campos reais do Angel's Care.
- * Trocaremos por leitura do Firebase app-angelscare (sem Blaze no portal).
- */
+// Dados de demonstração (seed); não são usuários reais do Firestore.
+// Demo (seed) data; not real Firestore users.
 export type BkfUser = {
   id: string;
   displayName: string;

@@ -8,6 +8,11 @@ import { isBkfAdminSession } from "@/lib/bkf/operators";
 import { getAngelsCareAuth } from "@/lib/firebase/angels-care";
 import { setUserDisabledByAdmin } from "@/lib/bkf/users-firestore";
 import {
+  REPORTS_RESOLUTION_PRESETS,
+  presetsForDisplay,
+} from "@/lib/bkf/resolution-codes";
+import { getAppById } from "@/data/apps";
+import {
   formatReportDt,
   isSeedConnectionId,
   loadConnectionMessages,
@@ -24,6 +29,8 @@ type Props = { appId: string };
 type Filter = "open" | "all" | "reviewed" | "dismissed";
 
 export function ReportsModule({ appId }: Props) {
+  const appName = getAppById(appId)?.name || appId;
+  const reportPresets = presetsForDisplay(REPORTS_RESOLUTION_PRESETS, appName);
   const [rows, setRows] = useState<ModerationReport[]>([]);
   const [ready, setReady] = useState(false);
   const [filter, setFilter] = useState<Filter>("open");
@@ -34,6 +41,7 @@ export function ReportsModule({ appId }: Props) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [selected, setSelected] = useState<ModerationReport | null>(null);
   const [reviewNote, setReviewNote] = useState("");
+  const [resolutionCodes, setResolutionCodes] = useState<string[]>([]);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
@@ -47,12 +55,6 @@ export function ReportsModule({ appId }: Props) {
   }, []);
 
   useEffect(() => {
-    if (appId !== "angels_care") {
-      setRows([]);
-      setReady(true);
-      return;
-    }
-
     let cancelled = false;
     setReady(false);
     setError(null);
@@ -110,6 +112,7 @@ export function ReportsModule({ appId }: Props) {
         reportId: report.id,
         status,
         reviewNote,
+        resolutionCodes,
       });
       setRows((prev) =>
         prev.map((r) =>
@@ -118,6 +121,7 @@ export function ReportsModule({ appId }: Props) {
                 ...r,
                 status,
                 reviewNote: reviewNote.trim(),
+                resolutionCodes,
                 reviewedAt: new Date().toISOString(),
                 reviewedByEmail:
                   getAngelsCareAuth().currentUser?.email?.toLowerCase() ?? "",
@@ -132,6 +136,7 @@ export function ReportsModule({ appId }: Props) {
       );
       setSelected(null);
       setReviewNote("");
+      setResolutionCodes([]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Falha ao atualizar denúncia.");
     } finally {
@@ -160,6 +165,7 @@ export function ReportsModule({ appId }: Props) {
   function openReport(report: ModerationReport) {
     setSelected(report);
     setReviewNote(report.reviewNote || "");
+    setResolutionCodes(report.resolutionCodes || []);
     setChatOpen(false);
     setChatMessages([]);
     setChatError(null);
@@ -501,7 +507,45 @@ export function ReportsModule({ appId }: Props) {
             </section>
 
             <label className="bkf-field">
-              <span>Nota da análise</span>
+              <span>Nota da análise (atalhos KPI)</span>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "0.35rem",
+                  flexWrap: "wrap",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                {reportPresets.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    className={`bkf-chip ${resolutionCodes.includes(preset.id) ? "is-on" : ""}`}
+                    disabled={busyId === selected.id || selected.status !== "open"}
+                    onClick={() => {
+                      setResolutionCodes((prev) =>
+                        prev.includes(preset.id)
+                          ? prev.filter((id) => id !== preset.id)
+                          : [...prev, preset.id],
+                      );
+                      setReviewNote((prev) => {
+                        const trimmed = prev.trim();
+                        if (trimmed.includes(preset.text)) {
+                          return trimmed
+                            .split("\n")
+                            .filter((line) => line.trim() !== preset.text)
+                            .join("\n")
+                            .trim();
+                        }
+                        return trimmed ? `${trimmed}\n${preset.text}` : preset.text;
+                      });
+                    }}
+                    title={preset.text}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
               <textarea
                 className="bkf-input bkf-textarea"
                 rows={3}

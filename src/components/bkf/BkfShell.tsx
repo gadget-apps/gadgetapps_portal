@@ -25,7 +25,7 @@ type Props = {
 function moduleIdFromPath(pathname: string, base: string): string | null {
   const normalized = pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
   const baseNorm = base.endsWith("/") ? base.slice(0, -1) : base;
-  if (normalized === baseNorm) return null; // visão geral
+  if (normalized === baseNorm) return null;
   if (!normalized.startsWith(`${baseNorm}/`)) return null;
   const rest = normalized.slice(baseNorm.length + 1);
   const id = rest.split("/")[0] ?? "";
@@ -62,6 +62,7 @@ export function BkfShell({ app, children }: Props) {
   }, [router]);
 
   // Operador: só Chat / fila (sem visão geral nem módulos admin).
+  // Operator: Chat / queue only (no overview and no admin modules).
   useEffect(() => {
     if (!ready || isAdmin) return;
     const modId = moduleIdFromPath(pathname, base);
@@ -127,6 +128,8 @@ export function BkfShell({ app, children }: Props) {
           {isAdmin ? (
             <Link
               href={`${base}/`}
+              target="_blank"
+              rel="noopener noreferrer"
               className={`bkf__nav-item ${pathname === `${base}/` || pathname === base ? "is-active" : ""}`}
             >
               Visão geral
@@ -142,6 +145,8 @@ export function BkfShell({ app, children }: Props) {
               <Link
                 key={mod.id}
                 href={href}
+                target="_blank"
+                rel="noopener noreferrer"
                 className={`bkf__nav-item ${active ? "is-active" : ""}`}
               >
                 {mod.title}

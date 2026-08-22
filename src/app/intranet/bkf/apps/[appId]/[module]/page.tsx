@@ -6,6 +6,8 @@ import { MocksModule } from "@/components/bkf/MocksModule";
 import { TeamModule } from "@/components/bkf/TeamModule";
 import { PremiumModule } from "@/components/bkf/PremiumModule";
 import { ReportsModule } from "@/components/bkf/ReportsModule";
+import { OuvidoriaModule } from "@/components/bkf/OuvidoriaModule";
+import { KpisModule } from "@/components/bkf/KpisModule";
 import { SosModule } from "@/components/bkf/SosModule";
 import { FunctionsModule } from "@/components/bkf/FunctionsModule";
 import { UsersModule } from "@/components/bkf/UsersModule";
@@ -55,6 +57,10 @@ export default async function ModulePage({ params }: Props) {
     body = <PremiumModule appId={app.appId} />;
   } else if (module === "reports") {
     body = <ReportsModule appId={app.appId} />;
+  } else if (module === "ouvidoria") {
+    body = <OuvidoriaModule appId={app.appId} />;
+  } else if (module === "kpis") {
+    body = <KpisModule appId={app.appId} />;
   } else if (module === "sos") {
     body = <SosModule appId={app.appId} />;
   } else if (module === "functions") {

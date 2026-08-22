@@ -1,11 +1,10 @@
-/**
- * Garante que a tela /login sempre abra sem e-mail/senha preenchidos
- * (autofill do browser, bfcache, soft navigation, etc.).
- */
+// Garante que /login abra sem e-mail/senha (autofill do Chrome, bfcache, navegação suave).
+// Ensures /login opens with empty email/password (Chrome autofill, bfcache, soft navigation).
 
 export const LOGIN_WIPE_KEY = "gat_login_wipe";
 
-/** Chamar em toda saída da intranet / logout / redirect para /login. */
+// Chamar em toda saída da intranet / logout / redirect para /login.
+// Call on every intranet exit / logout / redirect to /login.
 export function markLoginFieldsMustWipe(): void {
   if (typeof window === "undefined") return;
   try {

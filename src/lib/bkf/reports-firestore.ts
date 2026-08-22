@@ -27,6 +27,7 @@ export type ModerationReport = {
   reviewedAt: string;
   reviewedByEmail: string;
   reviewNote: string;
+  resolutionCodes: string[];
   reporterName: string;
   reporterEmail: string;
   reportedName: string;
@@ -107,6 +108,9 @@ function mapReport(
     reviewedAt: tsToIso(data.reviewedAt),
     reviewedByEmail: String(data.reviewedByEmail ?? ""),
     reviewNote: String(data.reviewNote ?? ""),
+    resolutionCodes: Array.isArray(data.resolutionCodes)
+      ? data.resolutionCodes.map(String)
+      : [],
     reporterName: String(data.reporterName ?? reporter.name),
     reporterEmail: String(data.reporterEmail ?? reporter.email),
     reportedName: String(data.reportedName ?? reported.name),
@@ -148,6 +152,7 @@ export async function resolveModerationReport(input: {
   reportId: string;
   status: "reviewed" | "dismissed";
   reviewNote?: string;
+  resolutionCodes?: string[];
 }): Promise<void> {
   const auth = getAngelsCareAuth();
   const user = auth.currentUser;
@@ -159,6 +164,9 @@ export async function resolveModerationReport(input: {
     reviewedByEmail: (user.email ?? "").toLowerCase(),
     reviewedByUid: user.uid,
     reviewNote: (input.reviewNote ?? "").trim(),
+    resolutionCodes: [
+      ...new Set((input.resolutionCodes ?? []).map((c) => c.trim()).filter(Boolean)),
+    ],
   });
 }
 
@@ -177,7 +185,8 @@ export function isSeedConnectionId(connectionId: string): boolean {
   return !connectionId || connectionId.startsWith("seed_conn_");
 }
 
-/** Auditoria LGPD: registra que o admin abriu a conversa desta denúncia. */
+/** Auditoria LGPD: registra que o admin abriu a conversa desta denúncia.
+ *  LGPD audit: records that the admin opened this report's conversation. */
 export async function logConversationView(reportId: string): Promise<void> {
   const auth = getAngelsCareAuth();
   const user = auth.currentUser;
@@ -190,10 +199,8 @@ export async function logConversationView(reportId: string): Promise<void> {
   });
 }
 
-/**
- * Histórico só-leitura do matching ligado à denúncia.
- * Uso exclusivo admin, após confirmação de finalidade no UI.
- */
+/** Histórico só-leitura do matching da denúncia; exclusivo admin, após confirmação de finalidade no UI.
+ *  Read-only matching history for the report; admin-only, after purpose confirmation in the UI. */
 export async function loadConnectionMessages(
   connectionId: string,
   limitCount = 200,

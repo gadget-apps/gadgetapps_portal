@@ -1,7 +1,3 @@
-/**
- * Módulos da intranet (área logada de colaboradores).
- * BKF é o primeiro; outros entram aqui no futuro sem misturar com o site público.
- */
 export type IntranetModule = {
   id: string;
   href: string;

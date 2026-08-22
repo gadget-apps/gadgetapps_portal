@@ -3,7 +3,6 @@ import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 import { getFunctions, type Functions } from "firebase/functions";
 
-/** Config WEB atual do projeto app-angelscare (app: GadgetApps BKF Portal). */
 const angelsCareFirebaseConfig = {
   apiKey: "AIzaSyBHGLfKBSBpTQXOu9gEXOplhbJDLcJQ6a4",
   authDomain: "app-angelscare.firebaseapp.com",
