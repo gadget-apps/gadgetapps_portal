@@ -23,6 +23,13 @@ export const metadata: Metadata = {
   },
   description:
     "Gadget Apps Technology — produtos digitais e área colaborador.",
+  icons: {
+    icon: [
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+      { url: "/favicon-v2.png", type: "image/png", sizes: "48x48" },
+    ],
+    apple: [{ url: "/apple-icon-v2.png", sizes: "180x180", type: "image/png" }],
+  },
   openGraph: {
     title: "Gadget Apps Technology",
     description: "Produtos digitais e área colaborador.",
