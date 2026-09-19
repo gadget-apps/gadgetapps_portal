@@ -62,7 +62,7 @@ export function ChatQueueModule({ appId }: Props) {
   const [nameDraft, setNameDraft] = useState("");
   const [nameReady, setNameReady] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const messagesRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try {
@@ -163,9 +163,9 @@ export function ChatQueueModule({ appId }: Props) {
   }, [selectedId, selected?.userName]);
 
   useEffect(() => {
-    const el = messagesRef.current;
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
+    const main = mainRef.current;
+    if (!main) return;
+    main.scrollTop = main.scrollHeight;
   }, [messages, selectedId]);
 
   const queue = useMemo(() => {
@@ -452,7 +452,7 @@ export function ChatQueueModule({ appId }: Props) {
         </ul>
       </aside>
 
-      <div className="chatq__main">
+      <div className="chatq__main" ref={mainRef}>
         {isAdmin ? (
           <div className="chatq__dash">
             <div className="chatq__dash-head">
@@ -593,7 +593,7 @@ export function ChatQueueModule({ appId }: Props) {
                 )}
               </div>
 
-              <div className="chatq__messages" ref={messagesRef}>
+              <div className="chatq__messages">
                 {messages.map((m) => (
                   <div
                     key={m.id}

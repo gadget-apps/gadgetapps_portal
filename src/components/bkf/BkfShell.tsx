@@ -138,9 +138,12 @@ export function BkfShell({ app, children }: Props) {
           {visibleModules.map((mod) => {
             const href = `${base}/${mod.id}/`;
             const active =
-              pathname === href ||
-              pathname === href.slice(0, -1) ||
-              pathname.startsWith(`${base}/${mod.id}/`);
+              mod.id === "config"
+                ? pathname.startsWith(`${base}/config`) ||
+                  pathname.startsWith(`${base}/tutorials`)
+                : pathname === href ||
+                  pathname === href.slice(0, -1) ||
+                  pathname.startsWith(`${base}/${mod.id}/`);
             return (
               <Link
                 key={mod.id}

@@ -11,6 +11,7 @@ import { KpisModule } from "@/components/bkf/KpisModule";
 import { SosModule } from "@/components/bkf/SosModule";
 import { FunctionsModule } from "@/components/bkf/FunctionsModule";
 import { UsersModule } from "@/components/bkf/UsersModule";
+import { TutorialsConfigRedirect } from "@/components/bkf/TutorialsConfigRedirect";
 import { CATALOG_APPS, getAppById } from "@/data/apps";
 import { BKF_MODULES, isBkfModule } from "@/data/bkf/modules";
 
@@ -67,6 +68,8 @@ export default async function ModulePage({ params }: Props) {
     body = <FunctionsModule appId={app.appId} />;
   } else if (module === "mocks") {
     body = <MocksModule />;
+  } else if (module === "tutorials") {
+    body = <TutorialsConfigRedirect appId={app.appId} />;
   } else if (module === "config") {
     body = <ConfigModule />;
   }

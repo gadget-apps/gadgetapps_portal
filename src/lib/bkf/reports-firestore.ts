@@ -4,10 +4,12 @@ import {
   getDoc,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   updateDoc,
+  type Unsubscribe,
 } from "firebase/firestore";
 import { getAngelsCareAuth, getAngelsCareDb } from "@/lib/firebase/angels-care";
 
@@ -146,6 +148,75 @@ export async function loadModerationReports(): Promise<ModerationReport[]> {
   );
   list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return list;
+}
+
+/** Lista denúncias em tempo real (mesmo recorte de [loadModerationReports]). */
+/** Live moderation reports (same slice as [loadModerationReports]). */
+export function watchModerationReports(
+  onChange: (reports: ModerationReport[]) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  const db = getAngelsCareDb();
+  const col = collection(db, "moderation_reports");
+  const q = query(col, orderBy("createdAt", "desc"), limit(PAGE_SIZE));
+
+  let cancelled = false;
+  let fallbackUnsub: Unsubscribe | null = null;
+
+  const emitFromDocs = async (
+    docs: Array<{ id: string; data: () => Record<string, unknown> }>,
+  ) => {
+    const uids: string[] = [];
+    for (const d of docs) {
+      const data = d.data();
+      uids.push(String(data.reporterId ?? ""), String(data.reportedUserId ?? ""));
+    }
+    const users = await resolveUsers(uids);
+    if (cancelled) return;
+    const list = docs.map((d) => mapReport(d.id, d.data(), users));
+    list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    onChange(list);
+  };
+
+  const primaryUnsub = onSnapshot(
+    q,
+    (snap) => {
+      void emitFromDocs(
+        snap.docs.map((d) => ({
+          id: d.id,
+          data: () => d.data() as Record<string, unknown>,
+        })),
+      ).catch((err: unknown) => {
+        onError?.(err instanceof Error ? err : new Error(String(err)));
+      });
+    },
+    (err) => {
+      // Sem índice/orderBy: cai no snapshot sem ordenação.
+      // Missing index/orderBy: fall back to unordered snapshot.
+      if (fallbackUnsub) return;
+      fallbackUnsub = onSnapshot(
+        query(col, limit(PAGE_SIZE)),
+        (snap) => {
+          void emitFromDocs(
+            snap.docs.map((d) => ({
+              id: d.id,
+              data: () => d.data() as Record<string, unknown>,
+            })),
+          ).catch((inner: unknown) => {
+            onError?.(inner instanceof Error ? inner : new Error(String(inner)));
+          });
+        },
+        (inner) => onError?.(inner),
+      );
+      onError?.(err);
+    },
+  );
+
+  return () => {
+    cancelled = true;
+    primaryUnsub();
+    fallbackUnsub?.();
+  };
 }
 
 export async function resolveModerationReport(input: {

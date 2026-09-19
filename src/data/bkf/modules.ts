@@ -58,9 +58,20 @@ export const BKF_MODULES = [
     adminOnly: true,
   },
   {
+    id: "tutorials",
+    title: "Vídeos tutoriais",
+    description:
+      "Vínculos YouTube do catálogo (aba em Config técnica).",
+    adminOnly: true,
+    // Rota antiga; a gestão vive em Config técnica → Vídeos tutoriais.
+    // Legacy route; management lives under Config técnica → Vídeos tutoriais.
+    inNav: false,
+  },
+  {
     id: "config",
     title: "Config técnica",
-    description: "Force update do app Android.",
+    description:
+      "Force update Android e vínculos dos vídeos tutoriais no YouTube.",
     adminOnly: true,
   },
   {
@@ -83,5 +94,8 @@ export function isAdminOnlyModule(id: string): boolean {
 }
 
 export function modulesForRole(isAdmin: boolean) {
-  return BKF_MODULES.filter((m) => isAdmin || !m.adminOnly);
+  return BKF_MODULES.filter((m) => {
+    if ("inNav" in m && m.inNav === false) return false;
+    return isAdmin || !m.adminOnly;
+  });
 }

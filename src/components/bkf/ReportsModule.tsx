@@ -16,10 +16,10 @@ import {
   formatReportDt,
   isSeedConnectionId,
   loadConnectionMessages,
-  loadModerationReports,
   logConversationView,
   reportsMetricsFromRows,
   resolveModerationReport,
+  watchModerationReports,
   type ConnectionChatMessage,
   type ModerationReport,
 } from "@/lib/bkf/reports-firestore";
@@ -55,28 +55,24 @@ export function ReportsModule({ appId }: Props) {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
     setReady(false);
     setError(null);
 
-    void loadModerationReports()
-      .then((list) => {
-        if (cancelled) return;
+    const unsub = watchModerationReports(
+      (list) => {
         startTransition(() => {
           setRows(list);
           setReady(true);
         });
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
+      },
+      (err) => {
         setReady(true);
-        setError(
-          err instanceof Error ? err.message : "Falha ao carregar denúncias.",
-        );
-      });
+        setError(err.message || "Falha ao carregar denúncias.");
+      },
+    );
 
     return () => {
-      cancelled = true;
+      unsub();
     };
   }, [appId]);
 

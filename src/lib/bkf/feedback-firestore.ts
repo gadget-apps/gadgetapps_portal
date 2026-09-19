@@ -2,10 +2,12 @@ import {
   collection,
   doc,
   getDocs,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   updateDoc,
+  type Unsubscribe,
 } from "firebase/firestore";
 import { getAngelsCareAuth, getAngelsCareDb } from "@/lib/firebase/angels-care";
 import {
@@ -70,6 +72,66 @@ export function typeLabelPt(type: OuvidoriaType): string {
   return "Sugestão";
 }
 
+function mapSiteFeedbackDoc(
+  id: string,
+  data: Record<string, unknown>,
+): OuvidoriaItem {
+  return {
+    id,
+    type: normalizeType(String(data.type || "sugestao")),
+    name: String(data.name || ""),
+    email: String(data.email || ""),
+    message: String(data.message || ""),
+    product: String(data.product || data.appId || ""),
+    status: normalizeStatus(String(data.status || "open")),
+    createdAt: tsToIso(data.createdAt),
+    reviewedAt: tsToIso(data.reviewedAt),
+    reviewNote: String(data.reviewNote || ""),
+    replyText: String(data.replyText || ""),
+    resolutionCodes: Array.isArray(data.resolutionCodes)
+      ? data.resolutionCodes.map(String)
+      : [],
+    source: "site",
+    collection: "public_feedback",
+  };
+}
+
+function mapAppFeedbackDoc(
+  id: string,
+  data: Record<string, unknown>,
+): OuvidoriaItem {
+  return {
+    id,
+    type: normalizeType(String(data.type || "suggestion")),
+    name: String(data.userName || ""),
+    email: String(data.userEmail || ""),
+    message: String(data.message || ""),
+    product: String(data.appId || data.product || ""),
+    status: normalizeStatus(String(data.status || "open")),
+    createdAt: tsToIso(data.createdAt),
+    reviewedAt: tsToIso(data.reviewedAt),
+    reviewNote: String(data.reviewNote || ""),
+    replyText: String(data.replyText || ""),
+    resolutionCodes: Array.isArray(data.resolutionCodes)
+      ? data.resolutionCodes.map(String)
+      : [],
+    source: "app",
+    collection: "user_feedback",
+  };
+}
+
+function mergeOuvidoria(
+  siteRows: OuvidoriaItem[],
+  appRows: OuvidoriaItem[],
+  appId?: string,
+): OuvidoriaItem[] {
+  const merged = [...siteRows, ...appRows].sort((a, b) =>
+    (b.createdAt || "").localeCompare(a.createdAt || ""),
+  );
+  if (!appId) return merged;
+  return merged.filter((row) => !row.product || row.product === appId);
+}
+
 export async function loadOuvidoriaItems(
   appId?: string,
 ): Promise<OuvidoriaItem[]> {
@@ -81,52 +143,16 @@ export async function loadOuvidoriaItems(
 
   const siteRows: OuvidoriaItem[] =
     siteResult.status === "fulfilled"
-      ? siteResult.value.docs.map((d) => {
-          const data = d.data();
-          return {
-            id: d.id,
-            type: normalizeType(String(data.type || "sugestao")),
-            name: String(data.name || ""),
-            email: String(data.email || ""),
-            message: String(data.message || ""),
-            product: String(data.product || data.appId || ""),
-            status: normalizeStatus(String(data.status || "open")),
-            createdAt: tsToIso(data.createdAt),
-            reviewedAt: tsToIso(data.reviewedAt),
-            reviewNote: String(data.reviewNote || ""),
-            replyText: String(data.replyText || ""),
-            resolutionCodes: Array.isArray(data.resolutionCodes)
-              ? data.resolutionCodes.map(String)
-              : [],
-            source: "site" as const,
-            collection: "public_feedback" as const,
-          };
-        })
+      ? siteResult.value.docs.map((d) =>
+          mapSiteFeedbackDoc(d.id, d.data() as Record<string, unknown>),
+        )
       : [];
 
   const appRows: OuvidoriaItem[] =
     appResult.status === "fulfilled"
-      ? appResult.value.docs.map((d) => {
-          const data = d.data();
-          return {
-            id: d.id,
-            type: normalizeType(String(data.type || "suggestion")),
-            name: String(data.userName || ""),
-            email: String(data.userEmail || ""),
-            message: String(data.message || ""),
-            product: String(data.appId || data.product || ""),
-            status: normalizeStatus(String(data.status || "open")),
-            createdAt: tsToIso(data.createdAt),
-            reviewedAt: tsToIso(data.reviewedAt),
-            reviewNote: String(data.reviewNote || ""),
-            replyText: String(data.replyText || ""),
-            resolutionCodes: Array.isArray(data.resolutionCodes)
-              ? data.resolutionCodes.map(String)
-              : [],
-            source: "app" as const,
-            collection: "user_feedback" as const,
-          };
-        })
+      ? appResult.value.docs.map((d) =>
+          mapAppFeedbackDoc(d.id, d.data() as Record<string, unknown>),
+        )
       : [];
 
   if (siteResult.status === "rejected" && appResult.status === "rejected") {
@@ -135,12 +161,65 @@ export async function loadOuvidoriaItems(
       : new Error("Falha ao carregar ouvidoria.");
   }
 
-  const merged = [...siteRows, ...appRows].sort((a, b) =>
-    (b.createdAt || "").localeCompare(a.createdAt || ""),
+  return mergeOuvidoria(siteRows, appRows, appId);
+}
+
+/** Ouvidoria site+app em tempo real (dois listeners, merge no cliente). */
+/** Live ombudsman site+app (two listeners, client-side merge). */
+export function watchOuvidoriaItems(
+  appId: string | undefined,
+  onChange: (items: OuvidoriaItem[]) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  const db = getAngelsCareDb();
+  let siteRows: OuvidoriaItem[] = [];
+  let appRows: OuvidoriaItem[] = [];
+  let siteSettled = false;
+  let appSettled = false;
+
+  const emit = () => {
+    // Só emite depois dos dois listeners (sucesso ou erro), depois a cada update.
+    // Emit only after both listeners settle (ok or error), then on every update.
+    if (!siteSettled || !appSettled) return;
+    onChange(mergeOuvidoria(siteRows, appRows, appId));
+  };
+
+  const siteUnsub = onSnapshot(
+    query(collection(db, "public_feedback"), orderBy("createdAt", "desc")),
+    (snap) => {
+      siteRows = snap.docs.map((d) =>
+        mapSiteFeedbackDoc(d.id, d.data() as Record<string, unknown>),
+      );
+      siteSettled = true;
+      emit();
+    },
+    (err) => {
+      siteSettled = true;
+      emit();
+      onError?.(err);
+    },
   );
 
-  if (!appId) return merged;
-  return merged.filter((row) => !row.product || row.product === appId);
+  const appUnsub = onSnapshot(
+    query(collection(db, "user_feedback"), orderBy("createdAt", "desc")),
+    (snap) => {
+      appRows = snap.docs.map((d) =>
+        mapAppFeedbackDoc(d.id, d.data() as Record<string, unknown>),
+      );
+      appSettled = true;
+      emit();
+    },
+    (err) => {
+      appSettled = true;
+      emit();
+      onError?.(err);
+    },
+  );
+
+  return () => {
+    siteUnsub();
+    appUnsub();
+  };
 }
 
 export async function loadPublicFeedback(): Promise<OuvidoriaItem[]> {

@@ -2,8 +2,10 @@ import {
   collection,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
+  type Unsubscribe,
 } from "firebase/firestore";
 import { getAngelsCareDb } from "@/lib/firebase/angels-care";
 
@@ -180,6 +182,50 @@ export async function loadSosAuditEvents(): Promise<SosAuditEvent[]> {
     list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     return list;
   }
+}
+
+/** Auditoria SOS em tempo real. */
+/** Live SOS audit feed. */
+export function watchSosAuditEvents(
+  onChange: (events: SosAuditEvent[]) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  const db = getAngelsCareDb();
+  const col = collection(db, "sos_audit_events");
+  const q = query(col, orderBy("createdAt", "desc"), limit(PAGE_SIZE));
+
+  let fallbackUnsub: Unsubscribe | null = null;
+
+  const primaryUnsub = onSnapshot(
+    q,
+    (snap) => {
+      onChange(
+        snap.docs.map((d) =>
+          mapEvent(d.id, d.data() as Record<string, unknown>),
+        ),
+      );
+    },
+    (err) => {
+      if (fallbackUnsub) return;
+      fallbackUnsub = onSnapshot(
+        query(col, limit(PAGE_SIZE)),
+        (snap) => {
+          const list = snap.docs.map((d) =>
+            mapEvent(d.id, d.data() as Record<string, unknown>),
+          );
+          list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+          onChange(list);
+        },
+        (inner) => onError?.(inner),
+      );
+      onError?.(err);
+    },
+  );
+
+  return () => {
+    primaryUnsub();
+    fallbackUnsub?.();
+  };
 }
 
 export function outcomeLabel(outcome: string): string {

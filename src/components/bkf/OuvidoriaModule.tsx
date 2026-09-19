@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { isBkfAdminSession } from "@/lib/bkf/operators";
 import {
   formatFeedbackDt,
-  loadOuvidoriaItems,
   ouvidoriaNotePresets,
   resolveOuvidoriaItem,
   typeLabelPt,
+  watchOuvidoriaItems,
   type OuvidoriaItem,
   type OuvidoriaType,
 } from "@/lib/bkf/feedback-firestore";
@@ -37,28 +37,29 @@ export function OuvidoriaModule({ appId }: Props) {
   const [replyBody, setReplyBody] = useState("");
   const [resolutionCodes, setResolutionCodes] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     setIsAdmin(isBkfAdminSession());
   }, []);
 
-  async function reload() {
+  useEffect(() => {
     setReady(false);
     setError(null);
-    try {
-      const list = await loadOuvidoriaItems(appId);
-      setRows(list);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Falha ao carregar ouvidoria.",
-      );
-    } finally {
-      setReady(true);
-    }
-  }
-
-  useEffect(() => {
-    void reload();
+    const unsub = watchOuvidoriaItems(
+      appId,
+      (list) => {
+        startTransition(() => {
+          setRows(list);
+          setReady(true);
+        });
+      },
+      (err) => {
+        setReady(true);
+        setError(err.message || "Falha ao carregar ouvidoria.");
+      },
+    );
+    return () => unsub();
   }, [appId]);
 
   const visible = useMemo(() => {
@@ -141,7 +142,6 @@ export function OuvidoriaModule({ appId }: Props) {
         setNote("Descartada (sem e-mail ao usuário).");
       }
       closeModal();
-      await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao atualizar.");
     } finally {
