@@ -78,7 +78,7 @@ export function TeamModule() {
       setEmail("");
       setOkMsg(
         `Convite ${roleLabel(inviteRole)} criado para ${trimmed.toLowerCase()}. ` +
-          `A pessoa usa “Aceitar convite” no login e define a senha.`,
+          `Enviamos um e-mail com o link; a pessoa usa “Aceitar convite” no login e define a senha.`,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao convidar.");
@@ -195,7 +195,8 @@ export function TeamModule() {
             }}
           >
             <p style={{ margin: 0, fontSize: "0.875rem", color: "#6b7280" }}>
-              Informe o e-mail e o perfil de acesso do convidado.
+              Informe o e-mail e o perfil. O convidado recebe um e-mail com o
+              link para aceitar o acesso.
             </p>
             <input
               className="bkf-input"
