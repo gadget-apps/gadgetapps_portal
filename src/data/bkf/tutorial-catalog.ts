@@ -467,6 +467,13 @@ export const TUTORIAL_CATALOG: TutorialCatalogItem[] = [
     "file": "03 - Profissional/01 - Cadastrar/03- Central de Trabalho (Tela Home).webm"
   },
   {
+    "id": "03_profissional_01_cadastrar_04_visualizar_a_media_da_regiao",
+    "profile": "Profissional",
+    "module": "Cadastrar",
+    "title": "Visualizar a média da região",
+    "file": "03 - Profissional/01 - Cadastrar/04 - Visualizar a média da região.webm"
+  },
+  {
     "id": "03_profissional_02_alterar_dados_do_cadastro_01_alterar_dados_do_profissional",
     "profile": "Profissional",
     "module": "Alterar Dados do Cadastro",
