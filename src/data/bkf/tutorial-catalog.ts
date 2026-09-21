@@ -509,25 +509,11 @@ export const TUTORIAL_CATALOG: TutorialCatalogItem[] = [
     "file": "03 - Profissional/03 - Pesquisar/02 - Filtrar Oportunidade.webm"
   },
   {
-    "id": "03_profissional_03_pesquisar_03_card_oportunidade_e_seus_detalhes",
-    "profile": "Profissional",
-    "module": "Pesquisar",
-    "title": "Card Oportunidade e Seus Detalhes",
-    "file": "03 - Profissional/03 - Pesquisar/03 - Card Oportunidade e Seus Detalhes.webm"
-  },
-  {
     "id": "03_profissional_03_pesquisar_04_salvar_oportunidade_favoritar",
     "profile": "Profissional",
     "module": "Pesquisar",
     "title": "Salvar Oportunidade (Favoritar)",
     "file": "03 - Profissional/03 - Pesquisar/04  -Salvar Oportunidade (Favoritar).webm"
-  },
-  {
-    "id": "03_profissional_03_pesquisar_05_organizacao_dos_cards",
-    "profile": "Profissional",
-    "module": "Pesquisar",
-    "title": "Organização dos Cards",
-    "file": "03 - Profissional/03 - Pesquisar/05 - Organização dos Cards.webm"
   },
   {
     "id": "03_profissional_04_convites_de_conexao_01_enviar_convites_de_conexao_para_contratante",
@@ -691,25 +677,11 @@ export const TUTORIAL_CATALOG: TutorialCatalogItem[] = [
     "file": "03 - Profissional/12 - Ponto por Geolocalização/07 - Registro de falta.webm"
   },
   {
-    "id": "03_profissional_12_ponto_por_geolocalizacao_08_aviso_de_registro_de_ponto_saida",
-    "profile": "Profissional",
-    "module": "Ponto por Geolocalização",
-    "title": "Aviso de registro de ponto saída",
-    "file": "03 - Profissional/12 - Ponto por Geolocalização/08 - Aviso de registro de ponto saída.webm"
-  },
-  {
     "id": "03_profissional_12_ponto_por_geolocalizacao_09_registrar_ponto_com_mais_de_um_contrato",
     "profile": "Profissional",
     "module": "Ponto por Geolocalização",
     "title": "Registrar ponto com mais de um contrato",
     "file": "03 - Profissional/12 - Ponto por Geolocalização/09 - Registrar ponto com mais de um contrato.webm"
-  },
-  {
-    "id": "03_profissional_12_ponto_por_geolocalizacao_10_registro_de_ausencia",
-    "profile": "Profissional",
-    "module": "Ponto por Geolocalização",
-    "title": "Registro de ausência",
-    "file": "03 - Profissional/12 - Ponto por Geolocalização/10 - Registro de ausência.webm"
   },
   {
     "id": "03_profissional_13_gestao_de_ponto_01_espelho_de_ponto",
@@ -768,18 +740,11 @@ export const TUTORIAL_CATALOG: TutorialCatalogItem[] = [
     "file": "03 - Profissional/15 - Ajuda e Suporte/05 - Ouvidoria.webm"
   },
   {
-    "id": "03_profissional_15_ajuda_e_suporte_06_sair_do_app",
-    "profile": "Profissional",
-    "module": "Ajuda e Suporte",
-    "title": "Sair do App",
-    "file": "03 - Profissional/15 - Ajuda e Suporte/06 - Sair do App.webm"
-  },
-  {
-    "id": "03_profissional_15_ajuda_e_suporte_06_sobre_o_app_angel1s_care",
+    "id": "03_profissional_15_ajuda_e_suporte_07_sobre_o_app_angel1s_care",
     "profile": "Profissional",
     "module": "Ajuda e Suporte",
     "title": "Sobre o App Angel1s Care",
-    "file": "03 - Profissional/15 - Ajuda e Suporte/06 - Sobre o App Angel1s Care.webm"
+    "file": "03 - Profissional/15 - Ajuda e Suporte/07 - Sobre o App Angel1s Care.webm"
   },
   {
     "id": "03_profissional_16_sair_do_app_01_sair_do_app",
