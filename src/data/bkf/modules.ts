@@ -74,12 +74,6 @@ export const BKF_MODULES = [
       "Force update Android e vínculos dos vídeos tutoriais no YouTube.",
     adminOnly: true,
   },
-  {
-    id: "mocks",
-    title: "Mocks",
-    description: "Tickets e denúncias de teste (isSeed).",
-    adminOnly: true,
-  },
 ] as const;
 
 export type BkfModuleId = (typeof BKF_MODULES)[number]["id"];

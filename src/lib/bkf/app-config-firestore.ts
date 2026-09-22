@@ -19,7 +19,13 @@ export function playStoreUrlFor(packageId: string): string {
   return `https://play.google.com/store/apps/details?id=${id}`;
 }
 
+function parseMinBuild(raw: unknown): number {
+  if (typeof raw === "number") return Math.max(0, Math.floor(raw));
+  return Math.max(0, parseInt(String(raw ?? "0"), 10) || 0);
+}
+
 export type MobileAppConfig = {
+  /** Force update unico (producao + testes fechados). */
   minBuildNumber: number;
   message: string;
   androidPackageId: string;
@@ -59,14 +65,9 @@ export async function loadMobileAppConfig(): Promise<MobileAppConfig> {
     typeof data.androidPackageId === "string" && data.androidPackageId.trim()
       ? data.androidPackageId.trim()
       : DEFAULT_ANDROID_PACKAGE;
-  const minRaw = data.minBuildNumber;
-  const min =
-    typeof minRaw === "number"
-      ? Math.max(0, Math.floor(minRaw))
-      : Math.max(0, parseInt(String(minRaw ?? "0"), 10) || 0);
 
   return {
-    minBuildNumber: min,
+    minBuildNumber: parseMinBuild(data.minBuildNumber),
     message:
       typeof data.message === "string" && data.message.trim()
         ? data.message.trim()
@@ -97,8 +98,7 @@ export async function saveMobileAppConfig(
   const packageId =
     (input.androidPackageId || DEFAULT_ANDROID_PACKAGE).trim() ||
     DEFAULT_ANDROID_PACKAGE;
-  const message =
-    input.message.trim() || DEFAULT_FORCE_MESSAGE;
+  const message = input.message.trim() || DEFAULT_FORCE_MESSAGE;
   const minBuildNumber = Math.max(0, Math.floor(input.minBuildNumber) || 0);
   const playStoreUrl =
     (input.playStoreUrl || "").trim() || playStoreUrlFor(packageId);
@@ -106,25 +106,25 @@ export async function saveMobileAppConfig(
   const ref = doc(getAngelsCareDb(), COLLECTION, DOC_ID);
   const snap = await getDoc(ref);
 
+  // Um unico numero: grava nos dois campos para manter espelho coerente.
+  // Single number: write both fields so the mirror stays coherent.
+  const payload = {
+    minBuildNumber,
+    minBuildNumberClosedTesting: minBuildNumber,
+    message,
+    androidPackageId: packageId,
+    playStoreUrl,
+    updatedAt: serverTimestamp(),
+    updatedByEmail: email,
+  };
+
   if (!snap.exists()) {
     await setDoc(ref, {
-      minBuildNumber,
-      message,
-      androidPackageId: packageId,
-      playStoreUrl,
+      ...payload,
       seededAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      updatedByEmail: email,
     });
   } else {
-    await updateDoc(ref, {
-      minBuildNumber,
-      message,
-      androidPackageId: packageId,
-      playStoreUrl,
-      updatedAt: serverTimestamp(),
-      updatedByEmail: email,
-    });
+    await updateDoc(ref, payload);
   }
 
   return loadMobileAppConfig();

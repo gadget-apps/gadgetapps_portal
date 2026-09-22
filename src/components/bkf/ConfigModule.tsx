@@ -105,7 +105,7 @@ export function ConfigModule({
       setPackageId(saved.androidPackageId);
       setMsg(
         saved.minBuildNumber > 0
-          ? `Force update ativo: builds abaixo de ${saved.minBuildNumber} serão bloqueados.`
+          ? `Force update ativo (producao e testes fechados): builds abaixo de ${saved.minBuildNumber} serao bloqueados.`
           : "Force update desligado (minBuildNumber = 0).",
       );
     } catch (err) {
@@ -120,7 +120,7 @@ export function ConfigModule({
   if (!isAdmin) {
     return (
       <div className="bkf-panel">
-        <p className="bkf-empty">Somente o admin BKF acessa Config técnica.</p>
+        <p className="bkf-empty">Somente o admin BKF acessa Config tecnica.</p>
       </div>
     );
   }
@@ -131,10 +131,10 @@ export function ConfigModule({
     <div className="bkf-panel">
       <div className="bkf-panel__head">
         <div>
-          <h2 className="bkf-panel__title">Config técnica</h2>
+          <h2 className="bkf-panel__title">Config tecnica</h2>
           <p className="bkf-panel__sub">
-            Force update do app Android e vínculos manuais dos vídeos tutoriais
-            no YouTube.
+            Force update Android (mesmo minimo para producao e testes fechados)
+            e vinculos dos videos tutoriais no YouTube.
           </p>
         </div>
       </div>
@@ -152,7 +152,7 @@ export function ConfigModule({
           className={`bkf-chip ${section === "videos" ? "is-on" : ""}`}
           onClick={() => selectSection("videos")}
         >
-          Vídeos tutoriais
+          Videos tutoriais
         </button>
       </div>
 
@@ -174,12 +174,14 @@ export function ConfigModule({
             </h3>
             <p style={{ margin: 0, color: "#6b7280", fontSize: "0.875rem" }}>
               Se o <strong>build number</strong> instalado (o <code>+N</code> do
-              pubspec) for menor que o mínimo, o app abre a tela de atualização
-              obrigatória. Use <code>0</code> para desligar.
+              pubspec) for menor que o minimo, o app abre a tela de atualizacao
+              obrigatoria — vale para <strong>producao</strong> e{" "}
+              <strong>testes fechados</strong>. Use <code>0</code> para
+              desligar.
             </p>
 
             {!configReady ? (
-              <p className="bkf-empty">Carregando configuração…</p>
+              <p className="bkf-empty">Carregando configuracao…</p>
             ) : (
               <form
                 onSubmit={onSaveForceUpdate}
@@ -201,7 +203,7 @@ export function ConfigModule({
                   {config?.exists ? (
                     <span className="bkf-mono" style={{ fontSize: 12 }}>
                       {config.updatedByEmail
-                        ? `último: ${config.updatedByEmail}`
+                        ? `ultimo: ${config.updatedByEmail}`
                         : "documento existe"}
                       {config.updatedAt
                         ? ` · ${new Date(config.updatedAt).toLocaleString("pt-BR")}`
@@ -209,7 +211,7 @@ export function ConfigModule({
                     </span>
                   ) : (
                     <span className="bkf-mono" style={{ fontSize: 12 }}>
-                      ainda não existe — será criado ao salvar
+                      ainda nao existe — sera criado ao salvar
                     </span>
                   )}
                 </div>
@@ -217,7 +219,7 @@ export function ConfigModule({
                 <label
                   style={{ display: "grid", gap: "0.35rem", fontSize: "0.875rem" }}
                 >
-                  Build mínimo obrigatório
+                  Build minimo obrigatorio (producao + testes fechados)
                   <input
                     className="bkf-input"
                     type="number"
