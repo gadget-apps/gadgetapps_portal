@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { TutorialsModule } from "@/components/bkf/TutorialsModule";
+import { TermsConfigSection } from "@/components/bkf/TermsConfigSection";
 import { isBkfAdminSession } from "@/lib/bkf/operators";
 import {
   DEFAULT_FORCE_MESSAGE,
@@ -11,19 +12,20 @@ import {
   type MobileAppConfig,
 } from "@/lib/bkf/app-config-firestore";
 
-type ConfigSection = "force" | "videos";
+type ConfigSection = "force" | "termos" | "videos";
 
 function sectionFromUrl(): ConfigSection {
   if (typeof window === "undefined") return "force";
-  return new URLSearchParams(window.location.search).get("secao") === "videos"
-    ? "videos"
-    : "force";
+  const secao = new URLSearchParams(window.location.search).get("secao");
+  if (secao === "videos") return "videos";
+  if (secao === "termos") return "termos";
+  return "force";
 }
 
 function writeSectionToUrl(section: ConfigSection) {
   const url = new URL(window.location.href);
-  if (section === "videos") url.searchParams.set("secao", "videos");
-  else url.searchParams.delete("secao");
+  if (section === "force") url.searchParams.delete("secao");
+  else url.searchParams.set("secao", section);
   window.history.replaceState(null, "", `${url.pathname}${url.search}`);
 }
 
@@ -42,7 +44,7 @@ export function ConfigModule({
   const [message, setMessage] = useState(DEFAULT_FORCE_MESSAGE);
   const [packageId, setPackageId] = useState("br.com.angelscare.app");
   const [section, setSection] = useState<ConfigSection>(() =>
-    initialSection === "videos" ? "videos" : sectionFromUrl(),
+    initialSection !== "force" ? initialSection : sectionFromUrl(),
   );
 
   useEffect(() => {
@@ -50,9 +52,11 @@ export function ConfigModule({
   }, []);
 
   useEffect(() => {
-    if (initialSection === "videos" || sectionFromUrl() === "videos") {
-      setSection("videos");
+    if (initialSection !== "force") {
+      setSection(initialSection);
+      return;
     }
+    setSection(sectionFromUrl());
   }, [initialSection]);
 
   function selectSection(next: ConfigSection) {
@@ -133,8 +137,8 @@ export function ConfigModule({
         <div>
           <h2 className="bkf-panel__title">Config tecnica</h2>
           <p className="bkf-panel__sub">
-            Force update Android (mesmo minimo para producao e testes fechados)
-            e vinculos dos videos tutoriais no YouTube.
+            Force update Android, termos de uso do app e vínculos dos vídeos
+            tutoriais no YouTube.
           </p>
         </div>
       </div>
@@ -149,6 +153,13 @@ export function ConfigModule({
         </button>
         <button
           type="button"
+          className={`bkf-chip ${section === "termos" ? "is-on" : ""}`}
+          onClick={() => selectSection("termos")}
+        >
+          Termos de uso
+        </button>
+        <button
+          type="button"
           className={`bkf-chip ${section === "videos" ? "is-on" : ""}`}
           onClick={() => selectSection("videos")}
         >
@@ -158,6 +169,8 @@ export function ConfigModule({
 
       {section === "videos" ? (
         <TutorialsModule embedded />
+      ) : section === "termos" ? (
+        <TermsConfigSection isAdmin={isAdmin} />
       ) : (
         <div style={{ display: "grid", gap: "1rem" }}>
           <section

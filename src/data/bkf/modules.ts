@@ -71,7 +71,7 @@ export const BKF_MODULES = [
     id: "config",
     title: "Config técnica",
     description:
-      "Force update Android e vínculos dos vídeos tutoriais no YouTube.",
+      "Force update Android, termos de uso do app e vídeos tutoriais.",
     adminOnly: true,
   },
 ] as const;
