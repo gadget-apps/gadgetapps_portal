@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import {
   emptyTermsDocument,
   formatTermsLastUpdate,
+  hasTermsFormChanges,
   loadLatestTermsDocument,
   publishNewTermsVersion,
   saveTermsInPlace,
@@ -79,9 +80,11 @@ export function TermsConfigSection({ isAdmin }: Props) {
     };
   }
 
+  const dirty = hasTermsFormChanges(current, formInput());
+
   async function onSaveInPlace(e: FormEvent) {
     e.preventDefault();
-    if (!isAdmin || busy) return;
+    if (!isAdmin || busy || !dirty) return;
     setBusy(true);
     setError(null);
     setMsg(null);
@@ -258,7 +261,12 @@ export function TermsConfigSection({ isAdmin }: Props) {
           <button
             type="submit"
             className="pill pill-blue"
-            disabled={busy || !current.exists}
+            disabled={busy || !current.exists || !dirty}
+            title={
+              current.exists && !dirty
+                ? "Altere uma cláusula, o título ou a data para salvar"
+                : undefined
+            }
           >
             {busy ? "Salvando…" : "Salvar texto (mesma versão)"}
           </button>

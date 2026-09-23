@@ -63,6 +63,17 @@ export function parseTermsClauses(raw: string): TermsClause[] {
   return clauses;
 }
 
+export function hasTermsFormChanges(
+  current: LegalTermsDocument,
+  input: { title: string; lastUpdate: string; clauses: TermsClause[] },
+): boolean {
+  if (!current.exists) return false;
+  const lastUpdate = input.lastUpdate.trim() || formatTermsLastUpdate();
+  if (input.title.trim() !== current.title.trim()) return true;
+  if (lastUpdate !== current.lastUpdate.trim()) return true;
+  return serializeTermsClauses(input.clauses) !== serializeTermsClauses(current.clauses);
+}
+
 export function serializeTermsClauses(clauses: TermsClause[]): string {
   return clauses
     .map((clause) => ({

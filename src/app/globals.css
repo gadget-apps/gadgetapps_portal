@@ -280,6 +280,17 @@ body {
   transform: scale(0.98);
 }
 
+.pill:disabled,
+.pill-blue:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pill-blue:disabled:hover {
+  background: var(--accent);
+}
+
 .pill-light {
   background: #f5f5f7;
   color: #1d1d1f;
