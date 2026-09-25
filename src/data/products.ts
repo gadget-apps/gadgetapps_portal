@@ -18,7 +18,7 @@ export const PUBLIC_PRODUCTS: PublicProduct[] = [
       "Tecnologia de ponta e profissionais qualificados unidos com um único propósito: a qualidade de vida e a proteção absoluta do seu familiar.",
     officialSiteUrl: "https://app-angelscare.web.app",
     playStoreUrl:
-      "https://play.google.com/store/apps/details?id=com.angelscare.app",
+      "https://play.google.com/store/apps/details?id=br.com.angelscare.app",
     status: "live",
     accentColor: "#F27421",
   },
